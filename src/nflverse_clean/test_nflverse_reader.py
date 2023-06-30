@@ -4,12 +4,13 @@
 #
 import os.path
 import unittest
-import uploader as up
+import nflverse_reader as up
 
 
 class TestNFLVerse(unittest.TestCase):
     file_type = "csv"
-    output_directory = "../output"
+    output_directory = "../../output"
+    schema_directory = "../../schemas"
 
     @classmethod
     def setUpClass(cls):
@@ -24,7 +25,8 @@ class TestNFLVerse(unittest.TestCase):
         year= 2021
         file_type = self.file_type
         local_file_path=f"{self.output_directory}/playbyplay_{year}.{file_type}"
-        result = up.load_pdp(year, file_type, local_file_path)
+        local_schema_path=f"{self.output_directory}/schema_pbp.csv"
+        result = up.load_pdp(year, file_type, local_file_path, local_schema_path)
         assert(result == 200)
         assert(os.path.exists(local_file_path))
 
@@ -32,7 +34,7 @@ class TestNFLVerse(unittest.TestCase):
         year= 2021
         file_type = self.file_type
         local_file_path=f"{self.output_directory}/playbyplay{year}_participation.{file_type}"
-        result = up.load_pbp_participation(year, file_type, local_file_path)
+        result = up.load_pbp_participation(year, file_type, local_file_path, schema_file=f"{self.schema_directory}/schema_pbp_participation.csv")
         assert(result == 200)
         assert(os.path.exists(local_file_path))
 
@@ -40,7 +42,7 @@ class TestNFLVerse(unittest.TestCase):
         year= 2021
         file_type = self.file_type
         local_file_path=f"{self.output_directory}/injuries_{year}.{file_type}"
-        result = up.load_injuries(year, file_type, local_file_path)
+        result = up.load_injuries(year, file_type, local_file_path, schema_file=f"{self.schema_directory}/schema_injuries.csv")
         assert(result == 200)
         assert(os.path.exists(local_file_path))
 
@@ -49,7 +51,10 @@ class TestNFLVerse(unittest.TestCase):
     
         # all
         local_file_path=f"{self.output_directory}/player_stats.{file_type}"
-        result = up.load_player_stats(file_type, local_file_path)
+        result = up.load_player_stats(
+            file_type,
+            local_file_path,
+            schema_file=f"{self.output_directory}/schema_player_stats.csv")
         assert(result == 200)
         assert(os.path.exists(local_file_path))
 
@@ -65,19 +70,24 @@ class TestNFLVerse(unittest.TestCase):
         for stat_type in ['def', 'pass', 'rec', 'rush']:
             year = 2021
             local_file_path=f"{self.output_directory}/pfr_advstats_{stat_type}_{year}.{file_type}"
-            result = up.load_pfr_advstats_stats(file_type, local_file_path, stats_type=stat_type, year=year)
+            result = up.load_pfr_advstats_stats(
+                file_type,
+                local_file_path,
+                stats_type=stat_type,
+                year=year,
+                schema_file=f"{self.output_directory}/schema_pfr_advstats.csv")
             assert(result == 200)
             assert(os.path.exists(local_file_path))
 
             local_file_path=f"{self.output_directory}/pfr_advstats_all.{file_type}"
-            result = up.load_pfr_advstats_stats(file_type, local_file_path, stats_type=stat_type)
+            result = up.load_pfr_advstats_stats(file_type, local_file_path, stats_type=stat_type, schema_file=f"{self.schema_directory}/schema_pfr_advstats.csv")
             assert(result == 200)
             assert(os.path.exists(local_file_path))
 
     def test_load_players(self):
         file_type = self.file_type
         local_file_path=f"{self.output_directory}/players.{file_type}"
-        result = up.load_players(file_type, local_file_path)
+        result = up.load_players(file_type, local_file_path, schema_file=f"{self.schema_directory}/schema_players.csv")
         assert(result == 200)
         assert(os.path.exists(local_file_path))
 
@@ -85,7 +95,7 @@ class TestNFLVerse(unittest.TestCase):
         file_type = self.file_type
         year = 2016
         local_file_path=f"{self.output_directory}/rosters.{file_type}"
-        result = up.load_rosters(year, file_type, local_file_path)
+        result = up.load_rosters(year, file_type, local_file_path, schema_file=f"{self.schema_directory}/schema_rosters.csv")
         assert(result == 200)
         assert(os.path.exists(local_file_path))
 
@@ -93,7 +103,7 @@ class TestNFLVerse(unittest.TestCase):
         file_type = self.file_type
         year = 2016
         local_file_path=f"{self.output_directory}/rosters_week_{year}.{file_type}"
-        result = up.load_rosters_weekly(year, file_type, local_file_path)
+        result = up.load_rosters_weekly(year, file_type, local_file_path, schema_file=f"{self.schema_directory}/schema_rosters_week.csv")
         assert(result == 200)
         assert(os.path.exists(local_file_path))
 
@@ -101,7 +111,7 @@ class TestNFLVerse(unittest.TestCase):
         file_type = self.file_type
         year = 2016
         local_file_path=f"{self.output_directory}/depth_charts_{year}.{file_type}"
-        result = up.load_depth_charts(year, file_type, local_file_path)
+        result = up.load_depth_charts(year, file_type, local_file_path, schema_file=f"{self.schema_directory}/schema_pbp.csv", silent=False)
         assert(result == 200)
         assert(os.path.exists(local_file_path))
 
@@ -126,7 +136,7 @@ class TestNFLVerse(unittest.TestCase):
         file_type = self.file_type
         year = 2016
         local_file_path=f"{self.output_directory}/snap_counts_{year}.{file_type}"
-        result = up.load_snap_counts(year, file_type, local_file_path)
+        result = up.load_snap_counts(year, file_type, local_file_path, schema_file=f"{self.schema_directory}/schema_snap_counts.csv")
         assert(result == 200)
         assert(os.path.exists(local_file_path))
 
