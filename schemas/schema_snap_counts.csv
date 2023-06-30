@@ -1,0 +1,17 @@
+column,type
+game_id,object
+pfr_game_id,object
+season,int64
+game_type,object
+week,int64
+player,object
+pfr_player_id,object
+position,object
+team,object
+opponent,object
+offense_snaps,int64
+offense_pct,float64
+defense_snaps,int64
+defense_pct,float64
+st_snaps,int64
+st_pct,float64

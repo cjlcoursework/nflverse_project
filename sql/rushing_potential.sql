@@ -1,5 +1,5 @@
 --
---
+-- Stats
 --
 
 with rushing as (select season,
@@ -30,14 +30,30 @@ from rushing
 group by season;
 
 
-
-select S.index, count(*) from player_stats S group by S.index  having count(*) > 1;
-
-
 select season, sum(carries) as carries, sum(rushing_yards), sum(rushing_yards)/sum(carries) as yards_per_carry  from player_stats
 where player_id = '00-0033293'
 group by season
 order by season desc;
+
+
+
+--
+-- Plays
+--
+create table offense as
+SELECT play_id, unnest(string_to_array(players_on_play, ';')) AS split_value
+FROM pbp_participation;
+
+SELECT play_id, unnest(string_to_array(offense_players, ';')) AS split_value
+FROM pbp_participation;
+
+SELECT play_id, unnest(string_to_array(defense_players, ';')) AS split_value
+FROM pbp_participation;
+
+
+select nflverse_game_id, play_id from pbp_participation where play_id = 40;
+
+
 
 
 

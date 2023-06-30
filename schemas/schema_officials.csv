@@ -1,0 +1,10 @@
+column,type
+game_id,int64
+game_key,int64
+official_name,object
+position,object
+jersey_number,int64
+official_id,float64
+season,int64
+season_type,object
+week,int64

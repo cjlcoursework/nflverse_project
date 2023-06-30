@@ -1,5 +1,8 @@
 # Data Dictionaries
 
+# Copied from NFLVerse - Just a convenience to study them offline.  But this is nflverse work product
+# https://github.com/nflverse/nflreadr
+
 This section of the repository hosts data dictionary CSVs for nflverse data. These get served to users in several formats:
 
 - as package data for nflreadr package users (i.e. running `nflreadr::dictionary_pbp` returns a dataframe)

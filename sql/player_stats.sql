@@ -7,6 +7,18 @@
 ---
 
 --
+-- PREPROCESS
+--
+-- player_id,player_display_name
+-- for each, replace the position and position_group where they are null
+[( '00-0027567', 'Steve Maneri' , 'TE'),
+ '00-0028543', 'Jeff Maehl'  , 'WR'),
+ '00-0025569', 'Adam Hayward'  ,'LB'),
+ '00-0029675', 'Trent Richardson' ,'RB')]
+
+
+
+--
 -- GATES
 --
 
@@ -19,6 +31,10 @@ select count(*) from player_stats where week is null;
 --- player_id should not be null
 select * from player_stats where player_id is null;
 
+select count(*) from player_stats where season_type is null;  -- should be zero
+
+-- position
+select player_id, season,  player_display_name, count(*) from player_stats where position is null group by season, player_id, player_display_name;
 
 
 
@@ -27,9 +43,28 @@ select * from player_stats where player_id is null;
 -- IMPUTATION
 --
 
--- 69 players with null status
-select count(*) from players where status is null;
---     fill missing status in players with a 'NOT-STATED' field - we won't really be predicting on this, so its ok
+-- no nulls
+
+-- season_type
+select season_type, count(*) from player_stats group by season_type;
+
+select count(*) from player_stats where season_type is null;  -- should be zero - or maybe very low - 1 or 2
+
+
+
+-- cross pollinate
+-- e.g.
+-- set player_name = player_display_name where player name is null and player_display_name is not null
+-- set player_display_name = player_name where player_display_name  is null and player_name is not null
+
+-- player_name vs player_display_name
+-- position vs position_group
+
+
+-- impute season_type - todo - we should be able to tell with the 'week' field but it's not a critical field
+update player_stats set season_type = 'REG' where season_type is null and week <= 18;  -- should be zero
+update player_stats set season_type = 'POST' where season_type is null and week > 18;  -- should be zero
+
 
 
 
@@ -72,7 +107,7 @@ with pl as (
 select * from pl where  gsis_id is null and player_id is not null
 ;
 
-delete from player_stats where player_id = '00-0005532';
+
 
 --- FINAL check --
 with pl as (
