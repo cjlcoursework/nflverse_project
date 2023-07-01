@@ -3,13 +3,10 @@ from pandas import DataFrame
 
 from NFLVersReader.src.nflverse_clean.configs import get_config
 from utils import assert_and_alert, impute_columns, assert_not_null, validate_positions
-
-import logging
+from logging_config import confgure_logging
 import warnings
 
 warnings.filterwarnings('ignore')
-# Configure logging
-from logging_config import confgure_logging
 logger = confgure_logging("pbp_logger")
 
 
@@ -34,13 +31,24 @@ def transformations(injuries_df):
     injuries_df['primary_injury'] = injuries_df['report_primary_injury'].fillna(injuries_df['practice_primary_injury'])
 
     # best efforts to fill empty report status fields
-    logger.info("""Get best values for report_status...""")
-    injuries_df.loc[(injuries_df.report_status.isna()) & (injuries_df.primary_injury.str.lower().str.contains('resting')), 'report_status'] = 'Resting'
-    injuries_df.loc[(injuries_df.report_status.isna()) & (injuries_df.primary_injury.str.lower().str.contains('personal')), 'report_status'] = 'Personal'
-    injuries_df.loc[(injuries_df.report_status.isna()) & (injuries_df.practice_status.str.lower().str.contains('full participation')), 'report_status'] = 'Optimistic'
-    injuries_df.loc[(injuries_df.report_status.isna()) & (injuries_df.practice_status.str.lower().str.contains('did not participate')), 'report_status'] = 'Doubtful'
-    injuries_df.loc[(injuries_df.report_status.isna()) & (injuries_df.practice_status.str.lower().str.contains('limited participation')), 'report_status'] = 'Questionable'
+    logger.info("""Get best values for null report_statuses...""")
+    injuries_df.loc[(injuries_df.report_status.isna()) & (
+        injuries_df.primary_injury.str.lower().str.contains('resting')), 'report_status'] = 'Resting'
+
+    injuries_df.loc[(injuries_df.report_status.isna()) & (
+        injuries_df.primary_injury.str.lower().str.contains('personal')), 'report_status'] = 'Personal'
+
+    injuries_df.loc[(injuries_df.report_status.isna()) & (
+        injuries_df.practice_status.str.lower().str.contains('full participation')), 'report_status'] = 'Optimistic'
+
+    injuries_df.loc[(injuries_df.report_status.isna()) & (
+        injuries_df.practice_status.str.lower().str.contains('did not participate')), 'report_status'] = 'Doubtful'
+
+    injuries_df.loc[(injuries_df.report_status.isna()) & (injuries_df.practice_status.str.lower().str.contains(
+        'limited participation')), 'report_status'] = 'Questionable'
+
     injuries_df.loc[(injuries_df.report_status.isna()), 'report_status'] = 'Uncertain'
+
     return injuries_df
 
 
@@ -58,8 +66,3 @@ def prep_player_injuries(df: DataFrame):
 def test_player_stats_job():
     injuries_df = pd.read_csv("../../output/injuries_2021.csv", low_memory=False, parse_dates=['date_modified'])
     prep_player_injuries(injuries_df)
-
-
-
-
-

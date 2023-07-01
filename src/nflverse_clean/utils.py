@@ -1,4 +1,3 @@
-import logging
 from typing import Union, List, Dict
 
 import pandas as pd
@@ -15,7 +14,7 @@ logger = confgure_logging("pbp_logger")
 def assert_and_alert(assertion, msg, silent=True):
     if assertion:
         return True
-    logging.error(msg)
+    logger.error(msg)
     if not silent:
         raise Exception(msg)
 
@@ -26,7 +25,7 @@ def assert_not_null(df, column_name):
 
 
 def publish_warning(msg, level):
-    logging.warning(msg)
+    logger.warning(msg)
 
 
 def check_valid_values(df, column_name, valid_values=None):
@@ -78,6 +77,14 @@ def create_dimension(df,
 
 def explode_column(df, primary_key, column, sep=";"):
     facts_df = df[[primary_key, column]].copy()
+    facts_df[column] = facts_df[column].str.split(sep)
+    return facts_df.explode(column)
+
+
+def explode_column_with_cols(df, columns: List[str], column: str, sep=";"):
+    cols = columns
+    cols.append(column)
+    facts_df = df[cols].copy()
     facts_df[column] = facts_df[column].str.split(sep)
     return facts_df.explode(column)
 

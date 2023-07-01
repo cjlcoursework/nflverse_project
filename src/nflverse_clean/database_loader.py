@@ -5,11 +5,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Connection, Engine
 
 
-# # Configure logging
-# import logging_config
-# logger = logging_config.confgure_logging("pbp_logger")
-
-
 class DatabaseLoader:
     connection_string: str = None
     conn: Connection = None
@@ -47,7 +42,7 @@ class DatabaseLoader:
         try:
             self.connect_sql()
             # logger.info(f"Loading {table_name} to schema: {schema}")
-            df.reset_index().to_sql(table_name, self.engine, schema=schema, if_exists=handle_exists, index=False, chunksize=500)
+            df.to_sql(table_name, self.engine, schema=schema, if_exists=handle_exists, index=False, chunksize=500)
         except Exception as e:
             print(e)
             raise (e)

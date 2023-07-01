@@ -1,11 +1,10 @@
-import logging
-
 import pandas as pd
 
-from NFLVersReader.src.nflverse_clean.injuries import prep_player_injuries
-from NFLVersReader.src.nflverse_clean.pbp_fact import job_pbp_main
+from NFLVersReader.src.nflverse_clean.advstats import load_advstats
+from NFLVersReader.src.nflverse_clean.player_injuries import prep_player_injuries
+from NFLVersReader.src.nflverse_clean.pbp_fact import dimensionalize_plays
 from NFLVersReader.src.nflverse_clean.pbp_participation import conform_pbp_participation_play_id, reconcile_join_keys, \
-    explode_player_lists
+    create_player_participation, update_player_lists
 
 # Configure logging
 import logging_config
@@ -14,8 +13,8 @@ from NFLVersReader.src.nflverse_clean.utils import load_dims_to_db
 
 logger = logging_config.confgure_logging("pbp_logger")
 
-if __name__ == '__main__':
-    logger.setLevel(logging.DEBUG)
+
+def perform_workflow():
 
     """
     Play by play
@@ -23,11 +22,8 @@ if __name__ == '__main__':
 
     # load pbp from local file and transform to star-like schema
     pbp_df = pd.read_csv("../../output/playbyplay_2021.csv", low_memory=False)
-    results = job_pbp_main(pbp_df)
+    results = dimensionalize_plays(pbp_df)
     results['schema'] = "controls"
-
-    # load semi-prepped data to db
-    load_dims_to_db(results)
 
     """
     Play by play participation
@@ -42,21 +38,23 @@ if __name__ == '__main__':
         participation_df=pbp_participation_df
     )
 
+    player_df = create_player_participation(pbp_participation_df)
+
     """
     PBP + Play by play participation
     """
 
+    # player_df = update_player_lists(pbp_df=results['play_actions'], players_df=player_df)
+
     reconcile_join_keys(pbp_df, pbp_participation_df)
 
-    offense_df, defense_df = explode_player_lists(pbp_participation_df)
-
     # load participation data to db
-    load_dims_to_db({
-        'schema': 'controls',
-        'offense_participants': offense_df,
-        'defense_participants': defense_df,
-        'pbp_participation': pbp_participation_df.drop(columns=['defense_players', 'offense_players'])
-    })
+    results.update(
+        {
+            'player_participation': player_df,
+            'pbp_participation': pbp_participation_df.drop(columns=['defense_players', 'offense_players'])
+        }
+    )
 
     """
     Player stats
@@ -81,8 +79,7 @@ if __name__ == '__main__':
     merged_df = pd.merge(stats_df, players_df, left_on='player_id', right_on='player_id', how='outer', indicator=True)
     check_merge(merged_df, stats_df)
 
-    load_dims_to_db({
-        'schema': 'controls',
+    results.update({
         'player_stats': stats_df,
         'players': players_df
     })
@@ -93,10 +90,28 @@ if __name__ == '__main__':
 
     injuries_df = pd.read_csv("../../output/injuries_2021.csv", low_memory=False, parse_dates=['date_modified'])
     prep_player_injuries(injuries_df)
-    load_dims_to_db({
-        'schema': 'controls',
+
+    results.update({
         'player_injuries': injuries_df
     })
 
+    """
+    Adv stats
+    """
+    advstats_df = load_advstats()
+    results.update({
+        'adv_stats': advstats_df
+    })
+    return results
+
+
+if __name__ == '__main__':
+    load_to_db = True
+
+    results = perform_workflow()
+    results['schema'] = 'controls'
+
+    if load_to_db:
+        load_dims_to_db(results)
 
 
