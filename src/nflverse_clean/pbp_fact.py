@@ -13,71 +13,108 @@ import warnings
 warnings.filterwarnings('ignore')
 logger = logging_config.confgure_logging("pbp_logger")
 
-analytics_columns = ["no_score_prob",
-              "opp_fg_prob",
-              "opp_safety_prob",
-              "opp_td_prob",
-              "fg_prob",
-              "safety_prob",
-              "td_prob",
-              "extra_point_prob",
-              "two_point_conversion_prob",
-              "ep",
-              "epa",
-              "total_home_epa",
-              "total_away_epa",
-              "total_home_rush_epa",
-              "total_away_rush_epa",
-              "total_home_pass_epa",
-              "total_away_pass_epa",
-              "air_epa",
-              "yac_epa",
-              "comp_air_epa",
-              "comp_yac_epa",
-              "total_home_comp_air_epa",
-              "total_away_comp_air_epa",
-              "total_home_comp_yac_epa",
-              "total_away_comp_yac_epa",
-              "total_home_raw_air_epa",
-              "total_away_raw_air_epa",
-              "total_home_raw_yac_epa",
-              "total_away_raw_yac_epa",
-              "wp",
-              "def_wp",
-              "home_wp",
-              "away_wp",
-              "wpa",
-              "vegas_wpa",
-              "vegas_home_wpa",
-              "home_wp_post",
-              "away_wp_post",
-              "vegas_wp",
-              "vegas_home_wp",
-              "total_home_rush_wpa",
-              "total_away_rush_wpa",
-              "total_home_pass_wpa",
-              "total_away_pass_wpa",
-              "air_wpa",
-              "yac_wpa",
-              "comp_air_wpa",
-              "comp_yac_wpa",
-              "total_home_comp_air_wpa",
-              "total_away_comp_air_wpa",
-              "total_home_comp_yac_wpa",
-              "total_away_comp_yac_wpa",
-              "total_home_raw_air_wpa",
-              "total_away_raw_air_wpa",
-              "total_home_raw_yac_wpa",
-              "total_away_raw_yac_wpa",
-              "qb_epa",
-              "xyac_epa",
-              "xyac_mean_yardage",
-              "xyac_median_yardage",
-              "xyac_success",
-              "xyac_fd",
-              "xpass",
-              "pass_oe" ]
+action_columns = [
+    'season',
+    'game_id',
+    'week',
+    'drive',
+    'down',
+    'drive_id',
+    'play_id',
+    'play_counter',
+    'play_type',
+    'qtr',
+    'action',
+    'half_seconds_remaining',
+    'game_seconds_remaining',
+    'ydstogo',
+    'posteam',
+    'posteam_score',
+    'posteam_score_post',
+    'posteam_timeouts_remaining',
+    'defteam',
+    'defteam_score',
+    'defteam_score_post',
+    'defteam_timeouts_remaining',
+    'offense_yards_gained',
+    'defense_yards_gained',
+    'old_game_id',
+    'pass_attempt',
+    'rush_attempt',
+    'kickoff_attempt',
+    'punt_attempt',
+    'field_goal_attempt',
+    'extra_point_attempt',
+    'timeout',
+    'penalty',
+    'qb_spike',
+    'desc'
+]
 
+analytics_columns = ["no_score_prob",
+                     "opp_fg_prob",
+                     "opp_safety_prob",
+                     "opp_td_prob",
+                     "fg_prob",
+                     "safety_prob",
+                     "td_prob",
+                     "extra_point_prob",
+                     "two_point_conversion_prob",
+                     "ep",
+                     "epa",
+                     "total_home_epa",
+                     "total_away_epa",
+                     "total_home_rush_epa",
+                     "total_away_rush_epa",
+                     "total_home_pass_epa",
+                     "total_away_pass_epa",
+                     "air_epa",
+                     "yac_epa",
+                     "comp_air_epa",
+                     "comp_yac_epa",
+                     "total_home_comp_air_epa",
+                     "total_away_comp_air_epa",
+                     "total_home_comp_yac_epa",
+                     "total_away_comp_yac_epa",
+                     "total_home_raw_air_epa",
+                     "total_away_raw_air_epa",
+                     "total_home_raw_yac_epa",
+                     "total_away_raw_yac_epa",
+                     "wp",
+                     "def_wp",
+                     "home_wp",
+                     "away_wp",
+                     "wpa",
+                     "vegas_wpa",
+                     "vegas_home_wpa",
+                     "home_wp_post",
+                     "away_wp_post",
+                     "vegas_wp",
+                     "vegas_home_wp",
+                     "total_home_rush_wpa",
+                     "total_away_rush_wpa",
+                     "total_home_pass_wpa",
+                     "total_away_pass_wpa",
+                     "air_wpa",
+                     "yac_wpa",
+                     "comp_air_wpa",
+                     "comp_yac_wpa",
+                     "total_home_comp_air_wpa",
+                     "total_away_comp_air_wpa",
+                     "total_home_comp_yac_wpa",
+                     "total_away_comp_yac_wpa",
+                     "total_home_raw_air_wpa",
+                     "total_away_raw_air_wpa",
+                     "total_home_raw_yac_wpa",
+                     "total_away_raw_yac_wpa",
+                     "qb_epa",
+                     "xyac_epa",
+                     "xyac_mean_yardage",
+                     "xyac_median_yardage",
+                     "xyac_success",
+                     "xyac_fd",
+                     "xpass",
+                     "pass_oe"]
 
 binary_columns = [
     "play_deleted",
@@ -238,7 +275,9 @@ game_columns = [
     "game_date",
     "start_time",
     "home_score",
-    "away_score"
+    "away_score",
+    "away_coach",
+    "home_coach"
 ]
 
 play_core = [
@@ -262,14 +301,6 @@ play_core = [
     "qb_spike",
     "qb_kneel",
     "penalty_yards",
-]
-
-play_identities = [
-    # Identity columns
-    "posteam",
-    "defteam",
-    "away_coach",
-    "home_coach"
 ]
 
 play_info = [
@@ -367,41 +398,57 @@ play_info = [
 
 ]
 
-player_id_columns = {'td_player_id': 'touchdown', 'tackle_with_assist_1_player_id': 'tackle_with_assist_1',
-                      'tackle_for_loss_1_player_id': 'tackle_for_loss_1', 'solo_tackle_2_player_id': 'solo_tackle_2',
-                      'solo_tackle_1_player_id': 'solo_tackle_1', 'assist_tackle_4_player_id': 'assist_tackle_4',
-                      'assist_tackle_3_player_id': 'assist_tackle_3', 'assist_tackle_2_player_id': 'assist_tackle_2',
-                      'assist_tackle_1_player_id': 'assist_tackle_1', 'safety_player_id': 'safety',
-                      'sack_player_id': 'sack', 'rusher_player_id': 'rusher', 'receiver_player_id': 'receiver',
-                      'qb_hit_2_player_id': 'qb_hit_2', 'qb_hit_1_player_id': 'qb_hit_1', 'punter_player_id': 'punter',
-                      'punt_returner_player_id': 'punt_returner', 'penalty_player_id': 'penalty',
-                      'passer_player_id': 'passer', 'pass_defense_2_player_id': 'pass_defense_2',
-                      'pass_defense_1_player_id': 'pass_defense_1',
-                      'own_kickoff_recovery_player_id': 'own_kickoff_recovery',
-                      'lateral_rusher_player_id': 'lateral_rusher', 'lateral_receiver_player_id': 'lateral_receiver',
-                      'lateral_punt_returner_player_id': 'lateral_punt_returner',
-                      'lateral_kickoff_returner_player_id': 'lateral_kickoff_returner',
-                      'lateral_interception_player_id': 'lateral_interception',
-                      'kickoff_returner_player_id': 'kickoff_returner', 'kicker_player_id': 'kicker',
-                      'interception_player_id': 'interception', 'half_sack_2_player_id': 'half_sack_2',
-                      'half_sack_1_player_id': 'half_sack_1', 'fumbled_2_player_id': 'fumbled_2',
-                      'fumbled_1_player_id': 'fumbled_1', 'forced_fumble_player_2_player_id': 'forced_fumble_player_2',
-                      'forced_fumble_player_1_player_id': 'forced_fumble_player_1',
-                      'fumble_recovery_2_player_id': 'fumble_recovery_2',
-                      'fumble_recovery_1_player_id': 'fumble_recovery_1', 'blocked_player_id': 'blocked'}
+player_id_columns = [
+    ("fumbled_2_player_id", "fumble", "offense"),
+    ("forced_fumble_player_2_player_id", "fumble", "offense"),
+    ("forced_fumble_player_1_player_id", "fumble", "offense"),
+    ("fumbled_1_player_id", "fumble", "offense"),
+    ("interception_player_id", "interception", "defense"),
+    ("lateral_interception_player_id", "interception", "defense"),
+    ("own_kickoff_recovery_player_id", "own_kickoff_recovery", "offense"),
+    ("qb_hit_1_player_id", "qb_hit", "defense"),
+    ("qb_hit_2_player_id", "qb_hit", "defense"),
+    ("half_sack_1_player_id", "sack", "defense"),
+    ("half_sack_2_player_id", "sack", "defense"),
+    ("sack_player_id", "sack", "defense"),
+    ("safety_player_id", "safety", "defense"),
+    ("tackle_for_loss_1_player_id", "tackle", "defense"),
+    ("assist_tackle_2_player_id", "tackle", "defense"),
+    ("solo_tackle_2_player_id", "tackle", "defense"),
+    ("assist_tackle_3_player_id", "tackle", "defense"),
+    ("assist_tackle_1_player_id", "tackle", "defense"),
+    ("tackle_with_assist_1_player_id", "tackle", "defense"),
+    ("solo_tackle_1_player_id", "tackle", "defense"),
+    ("assist_tackle_4_player_id", "tackle", "defense"),
+    ("td_player_id", "touchdown", "offense")
+]
 
 
-def rename_pbp_columns(pbp_df):
-    logger.info("moving play_id to play_counter, and creating a joinable play_id key")
-    pbp_df['play_counter'] = pbp_df['play_id']
-    pbp_df['play_id'] = pbp_df["game_id"].astype(str) + "_" + pbp_df["play_counter"].astype(str)
-    pbp_df['play_type'] = pbp_df['play_type'].fillna(pbp_df['play_type_nfl'].str.lower())
+# player_id_columns = {'td_player_id': 'touchdown', 'tackle_with_assist_1_player_id': 'tackle_with_assist_1',
+#                      'tackle_for_loss_1_player_id': 'tackle_for_loss_1', 'solo_tackle_2_player_id': 'solo_tackle_2',
+#                      'solo_tackle_1_player_id': 'solo_tackle_1', 'assist_tackle_4_player_id': 'assist_tackle_4',
+#                      'assist_tackle_3_player_id': 'assist_tackle_3', 'assist_tackle_2_player_id': 'assist_tackle_2',
+#                      'assist_tackle_1_player_id': 'assist_tackle_1', 'safety_player_id': 'safety',
+#                      'sack_player_id': 'sack', 'rusher_player_id': 'rusher', 'receiver_player_id': 'receiver',
+#                      'qb_hit_2_player_id': 'qb_hit_2', 'qb_hit_1_player_id': 'qb_hit_1', 'punter_player_id': 'punter',
+#                      'punt_returner_player_id': 'punt_returner', 'penalty_player_id': 'penalty',
+#                      'passer_player_id': 'passer', 'pass_defense_2_player_id': 'pass_defense_2',
+#                      'pass_defense_1_player_id': 'pass_defense_1',
+#                      'own_kickoff_recovery_player_id': 'own_kickoff_recovery',
+#                      'lateral_rusher_player_id': 'lateral_rusher', 'lateral_receiver_player_id': 'lateral_receiver',
+#                      'lateral_punt_returner_player_id': 'lateral_punt_returner',
+#                      'lateral_kickoff_returner_player_id': 'lateral_kickoff_returner',
+#                      'lateral_interception_player_id': 'lateral_interception',
+#                      'kickoff_returner_player_id': 'kickoff_returner', 'kicker_player_id': 'kicker',
+#                      'interception_player_id': 'interception', 'half_sack_2_player_id': 'half_sack_2',
+#                      'half_sack_1_player_id': 'half_sack_1', 'fumbled_2_player_id': 'fumbled_2',
+#                      'fumbled_1_player_id': 'fumbled_1', 'forced_fumble_player_2_player_id': 'forced_fumble_player_2',
+#                      'forced_fumble_player_1_player_id': 'forced_fumble_player_1',
+#                      'fumble_recovery_2_player_id': 'fumble_recovery_2',
+#                      'fumble_recovery_1_player_id': 'fumble_recovery_1', 'blocked_player_id': 'blocked'}
 
-    assert_and_alert(len(get_duplicates_by_key(pbp_df, 'play_id')) == 0,
-                     msg="Unexpected duplicate keys found creating play_id from game_id and play_id")
 
-
-def conform_actions(df: DataFrame):
+def conform_pbp_actions(df: DataFrame):
     logger.info(
         "Conform key actions like pass, rush, kickoff, etc. and add a single category field called actions... ")
     if 'action' not in df:
@@ -497,28 +544,10 @@ def conform_actions(df: DataFrame):
            (df['timeout'] == 0) &
            (df['penalty'] == 0), "action"] = "clock-event"
 
-    df.rename(columns={"yards_gained": "offense_yards", "return_yards": "defense_yards"}, inplace=True)
+    df["offense_yards_gained"] = df["yards_gained"].fillna(0)
+    df["defense_yards_gained"] = df["return_yards"].fillna(0)
 
-    actions = [
-        'season', 'game_id', 'week', 'play_type', 'posteam', 'defteam',
-        'play_id',
-        'play_counter',
-        'old_game_id',
-        'action',
-        'pass_attempt',
-        'rush_attempt',
-        'kickoff_attempt',
-        'punt_attempt',
-        'field_goal_attempt',
-        'extra_point_attempt',
-        'offense_yards',
-        'defense_yards', 'timeout', 'penalty', 'qb_spike',
-        'desc'
-    ]
-
-    actions_df = df[actions].copy()
-    actions_df['offense_yards'] = actions_df['offense_yards'].fillna(0)
-    actions_df['defense_yards'] = actions_df['defense_yards'].fillna(0)
+    actions_df = df[action_columns].copy()
 
     return actions_df
 
@@ -531,17 +560,18 @@ def create_player_events(df: DataFrame) -> DataFrame:
 
     contributions_df = pd.DataFrame(columns=['season', 'week', 'game_id', 'play_id', 'player_id', 'event'])
 
-    for column_name, contribution in player_id_columns.items():
+    for column_name, contribution, lineup in player_id_columns:
         foo = df.loc[
-            (df[column_name].notna() & (df[column_name].str.match(r"^\d{2}-\d+"))), ['season', 'week', 'game_id',
-                                                                                     'play_id', column_name]]
+            (df[column_name].notna() & (df[column_name].str.lower().str.match(r"^\d{2}-\d+"))), ['season', 'week',
+                                                                                                'game_id', 'play_id',
+                                                                                                column_name]]
         foo.rename(columns={column_name: 'player_id'}, inplace=True)
         foo['event'] = contribution
+        foo['lineup'] = lineup
         lfoo = len(foo)
         if lfoo > 0:
             logger.debug(f"Adding {len(foo)} {column_name} individual stats.... ")
             contributions_df = pd.concat([contributions_df, foo], ignore_index=True)
-
 
     return contributions_df
 
@@ -571,44 +601,54 @@ def perform_specific_imputes(df: DataFrame):
     impute_columns(df, columns=object_columns, value='NA')
 
 
-def clean_columns(df: DataFrame):
+def conform_pbp_columns(pbp_df):
+    logger.info("moving play_id to play_counter, and creating a joinable play_id key")
+    pbp_df['play_counter'] = pbp_df['play_id']
+    pbp_df['drive_id'] = pbp_df["game_id"].astype(str) + "_" + pbp_df["drive"].astype(int).astype(str)
+    pbp_df['play_id'] = pbp_df["game_id"] + "_" + pbp_df["play_counter"].astype(str)
+    pbp_df['play_type'] = pbp_df['play_type'].fillna(pbp_df['play_type_nfl'].str.lower())
+
+    assert_and_alert(len(get_duplicates_by_key(pbp_df, 'play_id')) == 0,
+                     msg="Unexpected duplicate keys found creating play_id from game_id and play_id")
+
+
+def clean_pbp_columns(df: DataFrame):
     # perform imputes
     impute_columns(df, binary_columns)  # all 'binary' columns
+
     perform_specific_imputes(df)  # everything else
-
     # conform play_id into a joinable key and other initial renames
-    rename_pbp_columns(df)
+    conform_pbp_columns(df)
 
 
-def dimensionalize_plays(pbp_df):
+def transform_pbp(pbp_df):
     data_size = len(pbp_df)
 
     # make a copy of the df
     df = pbp_df.copy()
 
     # perform imputes
-    clean_columns(df)
+    clean_pbp_columns(df)
 
     # separate the key 'play call' and milestone columns into a fact dimension
-    actions_df = conform_actions(df)
+    actions_df = conform_pbp_actions(df)
     validate_dimension(actions_df, "actions", data_size)
 
     # separate information pertaining to the 'drive' into a fact dimension
-    drive_df = create_dimension(df, columns=drive_columns, category="drive", keys=['play_id'])
+    drive_df = create_dimension(df, columns=drive_columns, category="drive",
+                                keys=['drive_id', 'game_id', 'play_id', 'play_counter'])
     validate_dimension(drive_df, "drive_df", data_size)
 
     # separate information about the clock, and other game admin data inot a 'fact' dimension
-    situation_df = create_dimension(df, columns=situational_columns, category="situations", keys=['play_id'])
+    situation_df = create_dimension(df, columns=situational_columns, category="situations",
+                                    keys=['drive_id', 'game_id', 'play_id', 'play_counter'])
     validate_dimension(situation_df, "situation_df", data_size)
 
     # separate metrics, such as score, yards, etc into a separate dim
-    play_metrics_df = create_dimension(df, columns=play_core, category="metrics", keys=['play_id'])
+    play_metrics_df = create_dimension(df, columns=play_core, category="metrics",
+                                       keys=['season', 'week', 'drive_id', 'game_id', 'play_id', 'play_counter'])
     play_metrics_df["two_point_conv_result"].fillna('NA')
     play_metrics_df["penalty_yards"].fillna(0, inplace=True)
-    validate_dimension(play_metrics_df, "play_metrics_df", data_size)
-
-    # create records for the 'who' for each play - e,g, possession team, defence team.
-    play_identities_df = create_dimension(df, columns=play_identities, category="identities", keys=['play_id'])
     validate_dimension(play_metrics_df, "play_metrics_df", data_size)
 
     # create game-level data e.g. game date, home and away teams, etc.
@@ -629,7 +669,7 @@ def dimensionalize_plays(pbp_df):
 
     analytics_df = create_dimension(df,
                                     columns=analytics_columns,
-                                    category="analytics", keys=['season', 'week', 'game_id', 'play_id'])
+                                    category="analytics", keys=['season', 'week', 'game_id', 'home_team', 'away_team', 'posteam', 'defteam','play_id', 'play_counter'])
 
     results = {
         'play_actions': actions_df,
@@ -637,7 +677,6 @@ def dimensionalize_plays(pbp_df):
         'play_analytics': analytics_df,
         'play_situations': situation_df,
         'play_metrics': play_metrics_df,
-        'play_identities': play_identities_df,
         'player_events': players_df,
         'game_info': game_df
     }
@@ -647,12 +686,12 @@ def dimensionalize_plays(pbp_df):
 
 def test_loader():
     pbp_df = pd.read_csv("../../output/playbyplay_2021.csv", low_memory=False)
-    results = dimensionalize_plays(pbp_df)
+    results = transform_pbp(pbp_df)
     load_dims_to_db(results)
     print("Done")
 
 
 def test_job_pbp_main():
     pbp_df = pd.read_csv("../../output/playbyplay_2021.csv", low_memory=False)
-    results = dimensionalize_plays(pbp_df)
+    results = transform_pbp(pbp_df)
     print("Done")

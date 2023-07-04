@@ -1,7 +1,7 @@
 import os
 
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Connection, Engine
 
 
@@ -21,6 +21,8 @@ class DatabaseLoader:
     def connect_sql(self, force_reconnect: bool = False):
         if self.conn is not None:
             if not force_reconnect:
+                if self.conn.in_transaction():
+                    self.conn.rollback()
                 return self.conn
             else:
                 self.conn.close()
@@ -34,15 +36,27 @@ class DatabaseLoader:
         dataFrame = pd.read_sql(table_name, self.conn)
         return dataFrame
 
+    def query_to_df(self, query: str):
+        self.connect_sql()
+        result = self.conn.execute(text(query))
+        return pd.DataFrame(result.fetchall())
+
+    def query(self, query: str):
+        self.connect_sql()
+        result = self.conn.execute(text(query))
+        return result.fetchall()
+
     def load_table(self,
                    df: pd.DataFrame,
                    table_name: str,
                    schema: str = "public",
                    handle_exists='replace') -> None:
-        try:
-            self.connect_sql()
-            # logger.info(f"Loading {table_name} to schema: {schema}")
-            df.to_sql(table_name, self.engine, schema=schema, if_exists=handle_exists, index=False, chunksize=500)
-        except Exception as e:
-            print(e)
-            raise (e)
+
+        self.connect_sql()
+        df.to_sql(
+            table_name,
+            self.engine,
+            schema=schema,
+            if_exists=handle_exists, index=False)
+
+

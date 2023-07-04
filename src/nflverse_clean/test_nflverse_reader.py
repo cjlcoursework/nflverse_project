@@ -22,7 +22,7 @@ class TestNFLVerse(unittest.TestCase):
         pass
 
     def test_load_pbp(self):
-        year= 2021
+        year = 2021
         file_type = self.file_type
         local_file_path=f"{self.output_directory}/playbyplay_{year}.{file_type}"
         local_schema_path=f"{self.output_directory}/schema_pbp.csv"
@@ -31,7 +31,7 @@ class TestNFLVerse(unittest.TestCase):
         assert(os.path.exists(local_file_path))
 
     def test_load_pbp_participation(self):
-        year= 2021
+        year = 2021
         file_type = self.file_type
         local_file_path=f"{self.output_directory}/playbyplay{year}_participation.{file_type}"
         result = up.load_pbp_participation(year, file_type, local_file_path, schema_file=f"{self.schema_directory}/schema_pbp_participation.csv")

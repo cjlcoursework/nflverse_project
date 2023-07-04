@@ -11,5 +11,5 @@ logger = confgure_logging("pbp_logger")
 
 
 def load_advstats():
-    advstats_df = pd.read_csv("../../output/pfr_advstats_all.csv", low_memory=False)
+    advstats_df = pd.read_csv(get_config('advstats'), low_memory=False)
     return advstats_df

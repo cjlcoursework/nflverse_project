@@ -1,4 +1,5 @@
 import pandas as pd
+from pandas import DataFrame
 
 from utils import assert_and_alert, impute_columns, assert_not_null
 from logging_config import confgure_logging
@@ -60,6 +61,22 @@ droppable_players = ["Arthur Williams", "Frank Stephens"]
 #
 #  player_stats
 #
+def merge_injuries(player_stats: DataFrame, player_injuries: DataFrame) -> DataFrame:
+    df = pd.merge(player_stats,
+                  player_injuries[['season', 'week', 'player_id', 'primary_injury', 'report_status', 'practice_status']],
+                  left_on=['season', 'week', 'player_id'],
+                  right_on=['season', 'week', 'player_id'],
+                  how='left')
+    df.primary_injury.fillna('None', inplace=True)
+    df.report_status.fillna('None', inplace=True)
+    df.practice_status.fillna('None', inplace=True)
+    sz_before = player_stats.shape[0]
+    sz_after = df.shape[0]
+    assert_and_alert(
+        sz_before == sz_after,
+        msg=f"After merge player_stats count changed - went from {sz_before} to {sz_after}"
+    )
+    return df
 
 
 def player_stats_fixes():
@@ -70,7 +87,7 @@ def player_stats_fixes():
         ('00-0029675', 'Trent Richardson', 'RB')])
 
 
-def impute_player_stats(df):
+def transform_player_stats(df):
 
     # iterate over our list and update the position column for ones we've looked up
     logger.info(f"fix specific player_stats: {player_stats_fixes}..")
@@ -94,10 +111,17 @@ def impute_player_stats(df):
 
     logger.info(f"fillna(0) for all binary columns...")
     impute_columns(df, player_stats_impute_to_zero)
+
+    df.rename(columns={
+        'gsis_id': 'player_id',
+        'recent_team': 'team'}, inplace=True)
+
+    check_keys(df)
     return df
 
 
-def impute_payers(player_df):
+def transform_players(player_df):
+
     logger.info("Process players dataset...")
 
     logger.info("drop players without gsis_ids - they won't link to player_stats")
@@ -106,6 +130,9 @@ def impute_payers(player_df):
 
     logger.info("fill empty players status to 'NONE'")
     player_df['status'] = player_df['status'].fillna('NONE')
+
+    logger.info("rename gsis_id to player_id...")
+    player_df.rename(columns={'gsis_id': 'player_id'}, inplace=True)
 
     return player_df
 
@@ -150,96 +177,10 @@ def check_keys(df):
     assert_not_null(df, 'week')
     assert_not_null(df, 'player_id')
     assert_not_null(df, 'position')
-    assert_not_null(df, 'position_group')
 
     assert_and_alert(
         assertion=(df.isna().sum().sum() == 0),
         msg="Found unexpected Nulls in player_stats ")
 
 
-# def job_player_stats_main(df: DataFrame) -> DataFrame:
-#     stats_df = impute_player_stats(df)
-#     check_keys(stats_df)
-#     return stats_df
 
-
-def test_player_stats_job():
-    stats_df = pd.read_csv("../../output/player_stats.csv", low_memory=False)
-    stats_df = impute_player_stats(stats_df)
-    check_keys(stats_df)
-
-    players_df = pd.read_csv("../../output/players.csv", low_memory=False)
-    players_df = impute_payers(players_df)
-    players_df.rename(columns={'gsis_id': 'player_id'}, inplace=True)
-
-    merged_df = pd.merge(stats_df, players_df, left_on='player_id', right_on='player_id', how='outer', indicator=True)
-    check_merge(merged_df, stats_df)
-
-    print("Done")
-
-
-
-
-#
-# def rename_pbp_columns(pbp_df):
-#     # ---------------------
-#     pbp_df['play_counter'] = pbp_df['play_id']
-#     pbp_df['play_id'] = pbp_df["game_id"].astype(str) + "_" + pbp_df["play_counter"].astype(str)
-#     assert_and_alert(len(get_duplicates_by_key(pbp_df, 'play_id')) == 0,
-#                      msg="Unexpected duplicate keys found creating play_id from game_id and play_id")
-#
-#
-# def rename_pbp_participant_columns(participation_df):
-#     # rename nflverse_game_id = game_id
-#     participation_df.rename(columns={'nflverse_game_id': 'game_id'}, inplace=True)
-#     participation_df['play_counter'] = participation_df['play_id']
-#     participation_df['play_id'] = participation_df["game_id"].astype(str) + "_" + participation_df[
-#         "play_counter"].astype(str)  ## temporary
-#     assert_and_alert(len(get_duplicates_by_key(participation_df, 'play_id')) == 0,
-#                      msg="Unexpected duplicate keys found creating play_id from game_id and play_id")
-#
-#
-# def reconcile_join_keys(pbp_df, participation_df):
-#     # pbp to participation is a 1 to 1 join
-#     merged_df = pd.merge(pbp_df, participation_df, left_on='play_id', right_on='play_id', how='outer', indicator=True,
-#                          suffixes=('_new', '_prev'))
-#     merged_df = merged_df.copy()
-#     assert_and_alert(len(get_duplicates_by_key(merged_df, 'play_id')) == 0,
-#                      msg="Unexpected duplicate keys found creating play_id from game_id and play_id")
-#
-#     missing_participations = merged_df.loc[(merged_df['_merge'] == 'left_only')] \
-#         [['play_id', 'play_counter_new', 'game_id_new', 'old_game_id_new']] \
-#         .rename(columns={
-#         'play_counter_new': 'play_counter',
-#         'game_id_new': 'game_id',
-#         'old_game_id_new': 'old_game_id'
-#     }).drop_duplicates()
-#
-#     found = 0
-#     nf = 0
-#     for index, row in missing_participations.iterrows():
-#         good_game_id = row['game_id']
-#         good_play_id = row['play_id']
-#         good_old_game_id = row['old_game_id']
-#         fix = participation_df.loc[(participation_df['old_game_id'] == good_old_game_id), ['play_id', 'game_id']]
-#         participation_df.loc[participation_df['old_game_id'] == good_old_game_id, ['play_id', 'game_id']] = [
-#             good_play_id, good_game_id]
-#
-#         if len(fix) == 0:
-#             nf += 1
-#         else:
-#             found += 1
-#
-#     print(f"Missing participants:   fixed {found},  not fixed: {nf}")
-#
-#     # create play_id : (pbp_df["game_id"]+"_"+pbp_df["play_id"])
-#     participation_df['play_id'] = participation_df["game_id"].astype(str) + "_" + participation_df[
-#         "play_counter"].astype(str)
-#     assert_and_alert(len(get_duplicates_by_key(participation_df, 'play_id')) == 0,
-#                      msg="Unexpected duplicate keys found creating play_id from game_id and play_id")
-#
-#     merged_df = pd.merge(pbp_df, participation_df, left_on='play_id', right_on='play_id', how='outer', indicator=True,
-#                          suffixes=('_new', '_prev'))
-#     merged_df = merged_df.copy()
-#     print(merged_df['_merge'].value_counts())
-# # %%
