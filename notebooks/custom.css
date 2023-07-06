@@ -1,0 +1,6 @@
+/* Custom styles for Markdown headers */
+h1 {
+  color: teal;
+  font-size: 24px;
+  /* Add more styles as needed */
+}
