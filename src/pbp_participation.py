@@ -5,10 +5,10 @@ from utils import assert_and_alert, impute_columns, get_duplicates_by_key, confo
     explode_column_with_cols
 
 import warnings
-from logging_config import confgure_logging
+from src import configure_logging
 
 warnings.filterwarnings('ignore')
-logger = confgure_logging("pbp_logger")
+logger = configure_logging("pbp_logger")
 
 
 def conform_participation_keys(participation_df):

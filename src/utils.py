@@ -3,18 +3,16 @@ from typing import Union, List, Dict
 import pandas as pd
 from pandas import DataFrame
 
-from NFLVersReader.src.nflverse_clean.configs import get_config
-from NFLVersReader.src.nflverse_clean.database_loader import DatabaseLoader
-from NFLVersReader.src.nflverse_clean.logging_config import confgure_logging
 
 # Configure logging
-logger = confgure_logging("pbp_logger")
+from configs import configure_logging
+logger = configure_logging("pbp_logger")
 
 
 def assert_and_alert(assertion, msg, silent=True):
     if assertion:
         return True
-    logger.error(msg)
+    logger.warning(msg)
     if not silent:
         raise Exception(msg)
 
@@ -26,6 +24,10 @@ def assert_not_null(df, column_name):
 
 def publish_warning(msg, level):
     logger.warning(msg)
+
+
+def publish_error(msg):
+    logger.error(msg)
 
 
 def check_valid_values(df, column_name, valid_values=None):
@@ -98,19 +100,3 @@ def get_duplicates_by_key(df, key_name):
 
     return duplicate_keys
 
-
-def load_dims_to_db(results: Dict):
-    schema = results.get('schema', 'public')
-    loader = DatabaseLoader(get_config('connection_string'))
-    for table, data in results.items():
-        if isinstance(data, DataFrame):
-            logger.info(f"create table {table} in schema {schema}")
-            loader.load_table(data, table_name=table, schema=schema)
-
-
-def validate_positions(df: DataFrame, column_name='position', silent=True):
-    positions_file = get_config('positions_data')
-    positions = pd.read_csv(positions_file)
-    index = set(positions.Pos)
-    bad_set = set(df.loc[(~df[column_name].isin(index)), column_name].to_list())
-    assert_and_alert(len(bad_set) == 0, msg=f"Unknown player positions: {bad_set}", silent= silent)

@@ -1,12 +1,14 @@
 import pandas as pd
 from pandas import DataFrame
 
-from utils import assert_and_alert, impute_columns, assert_not_null
-from logging_config import confgure_logging
+from src import *
+
 import warnings
 
+from src.utils import assert_not_null, assert_and_alert, impute_columns
+
 warnings.filterwarnings('ignore')
-logger = confgure_logging("pbp_logger")
+logger = configure_logging("pbp_logger")
 
 
 empty_headshot_url = 'none'
@@ -160,16 +162,6 @@ def check_merge(merged_df, stats_df):
                      msg=f"expected at least 98% of player_stats to be linked to players: percentage={stats_completeness}")
     assert_and_alert(assertion=stats_without_players < .01,
                      msg=f"stats_without_players should be zero: percentage={stats_without_players}")
-
-
-def get_duplicates_by_key(df, key_name):
-    # Get the count of duplicate keys
-    duplicate_counts = df.groupby(key_name).size().reset_index(name='count')
-
-    # Filter the duplicate keys
-    duplicate_keys = duplicate_counts[duplicate_counts['count'] > 1]
-
-    return duplicate_keys
 
 
 def check_keys(df):

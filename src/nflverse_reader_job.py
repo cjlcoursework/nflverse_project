@@ -1,16 +1,14 @@
+import logging
 import os.path
-import pickle
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import requests
-import pandas as pd
 import numpy as np
-from configs import get_config
+import requests
 
-from NFLVersReader.src.nflverse_clean.utils import assert_and_alert
+from src import *
+from utils import assert_and_alert
 
 # Configure logging
-import logging_config
-logger = logging_config.confgure_logging("pbp_logger")
+logger = configure_logging("pbp_logger")
 
 
 def validate_schema(local_file_path, schema_file, silent=True):
@@ -27,33 +25,35 @@ def validate_schema(local_file_path, schema_file, silent=True):
 
 def read_source(url, output_dir, local_file_base, schema_file_path=None, silent=True):
     # Make the HTTP request to get the Parquet file content
-    response = requests.get(url)
 
-    base_name = os.path.basename(url)
+    base_file_name = os.path.basename(url)
 
-    local_file_base = local_file_base + base_name[base_name.index('.'):]
-
-    dir_path = os.path.join(output_dir, *local_file_base.split("_")[:-1])
+    local_file_base_name = local_file_base + base_file_name[base_file_name.index('.'):]
+    if "_" not in local_file_base_name:
+        dir_path = os.path.join(output_dir, local_file_base)
+    else:
+        dir_path = os.path.join(output_dir, *local_file_base_name.split("_")[:-1])
 
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
-    full_path = os.path.join(dir_path, local_file_base)
+    full_path = os.path.join(dir_path, local_file_base_name)
 
     # Check if the request was successful (status code 200)
+    response = requests.get(url)
     if response.status_code == 200:
 
         # Write to the local_file_path
         with open(full_path, "wb") as file:
             file.write(response.content)
-            print(f"Success: {url}")
+            logger.info(f"Success: {url}")
 
         # validate against the schema if one was sent in
         if schema_file_path is not None:
             validate_schema(output_dir, schema_file_path, silent)
 
     else:
-        print(f"Failed  : {url}")
+        logger.info(f"Failed  : {url}")
     return response.status_code
 
 
@@ -99,30 +99,35 @@ class URLReader:
     def download(self):
         urls = self.get_urls()
 
+        test_only = False
+
         if not os.path.exists(self.output_directory):
             os.makedirs(self.output_directory)
 
-        # Create a thread pool executor with specified maximum workers
-        executor = ThreadPoolExecutor(max_workers=self.max_workers)
-
         # Submit download tasks to the executor
-        tasks = [
-            executor.submit(read_source, url, self.output_directory, file_name )
-            for file_name, url in urls.items()
-        ]
+        if test_only:
+            [read_source(url, self.output_directory, file_name) for file_name, url in urls.items()]
+        else:
+            executor = ThreadPoolExecutor(max_workers=self.max_workers)
+            tasks = [
+                # Create a thread pool executor with specified maximum workers
+                executor.submit(read_source, url, self.output_directory, file_name )
+                for file_name, url in urls.items()
+            ]
 
-        # Wait for all tasks to complete
-        for future in as_completed(tasks):
-            try:
-                result = future.result()
-                # print(f'Successfully downloaded: {result}')
-            except Exception as e:
-                print(f'Error occurred: {str(e)}')
+            # Wait for all tasks to complete
+            for future in as_completed(tasks):
+                try:
+                    result = future.result()
+                    # print(f'Successfully downloaded: {result}')
+                except Exception as e:
+                    logger.info(f'Error occurred: {str(e)}')
 
         return urls
 
 
 if __name__ == '__main__':
-    reader = URLReader(start_year=2016, last_year=2022, file_type='csv')
+    logger.setLevel(logging.DEBUG)
+    reader = URLReader(start_year=2016, last_year=2022, file_type=get_config("file_type"))
     urls = reader.download()
 

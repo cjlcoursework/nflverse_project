@@ -11,7 +11,7 @@ from NFLVersReader.src.nflverse_clean.utils import assert_and_alert
 
 # Configure logging
 import logging_config
-logger = logging_config.confgure_logging("pbp_logger")
+logger = logging_config.configure_logging("pbp_logger")
 
 
 def validate_schema(local_file_path, schema_file, silent=True):
