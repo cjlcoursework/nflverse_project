@@ -41,10 +41,10 @@ class DatabaseLoader:
         self.conn = self.engine.connect()
         return self.conn
 
-    def read_table(self, table_name: str) -> pd.DataFrame:
+    def read_table(self, table_name: str, schema: str = 'public') -> pd.DataFrame:
         self.connect_sql()
-        dataFrame = pd.read_sql(table_name, self.conn)
-        return dataFrame
+        df = pd.read_sql(text(f"select * from {schema}.{table_name}"), self.conn)
+        return df
 
     def query_to_df(self, query: str):
         self.connect_sql()
@@ -122,3 +122,5 @@ class DatabaseLoader:
         # Commit the changes and close the cursor and connection
         pg_conn.commit()
         cur.close()
+
+

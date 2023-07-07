@@ -1,6 +1,14 @@
 /* Custom styles for Markdown headers */
+body {
+    background: #DDDDDD;
+    color: #888888;
+    font-size: 250% !important;
+}
+
+strong { text-decoration: underline;
+}
+
 h1 {
   color: teal;
   font-size: 24px;
-  /* Add more styles as needed */
 }

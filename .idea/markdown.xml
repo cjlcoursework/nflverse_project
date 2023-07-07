@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="MarkdownSettings">
+    <option name="customStylesheetPath" value="$PROJECT_DIR$/notebooks/custom.css" />
+    <option name="customStylesheetText" value="h1 {&#10;  color: teal;&#10;  font-size: 24px;&#10;  /* Add more styles as needed */&#10;}" />
+    <option name="useCustomStylesheetPath" value="true" />
+    <option name="useCustomStylesheetText" value="true" />
+  </component>
+</project>
