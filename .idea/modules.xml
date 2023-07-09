@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/NFLVersReader.iml" filepath="$PROJECT_DIR$/.idea/NFLVersReader.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../../deep-learning/.idea/deep-learning.iml" filepath="$PROJECT_DIR$/../../../deep-learning/.idea/deep-learning.iml" />
     </modules>
   </component>
 </project>

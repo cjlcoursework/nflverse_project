@@ -3,6 +3,7 @@ from typing import Optional, Callable, Union
 import pandas as pd
 
 configurations = {
+    'project_name': "nfl",
     'file_type': "parquet",
     'pbp_url': 'https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_{year}.{file_type}',
     'pbp_participation_url': 'https://github.com/nflverse/nflverse-data/releases/download/pbp_participation/pbp_participation_{year}.{file_type}',
@@ -14,7 +15,10 @@ configurations = {
     'ng_stats_url': 'https://github.com/nflverse/nflverse-data/releases/download/nextgen_stats/ngs_{year}_{stat_type}.csv.gz',
     'ng_stats_types': ['passing', 'rushing', 'receiving'],
     'output_directory': "/Users/christopherlomeli/Source/courses/datascience/Springboard/capstone/NFL/NFLVersReader/output",
-    'data_directory': "/Users/christopherlomeli/Source/courses/datascience/Springboard/capstone/NFL/NFLVersReader/data/raw",
+    'data_directory': "/Users/christopherlomeli/Source/courses/datascience/Springboard/capstone/NFL/NFLVersReader/data/nfl",
+
+    'model_directory': "/Users/christopherlomeli/Source/courses/datascience/Springboard/capstone/NFL/NFLVersReader/model",
+
     'schema_directory': "/Users/christopherlomeli/Source/courses/datascience/Springboard/capstone/NFL/NFLVersReader/schemas",
     'connection_string': 'postgresql://postgres:chinois1@localhost',
     'positions_data': "/Users/christopherlomeli/Source/courses/datascience/Springboard/capstone/NFL/nfl_capstone/data"
