@@ -83,6 +83,12 @@ tested_extensions = {
     'parquet': pd.read_parquet
 }
 
+
+"""
+    'half_seconds_remaining',
+    'qtr',
+
+"""
 action_columns = [
     'season',
     'game_id',
@@ -90,14 +96,16 @@ action_columns = [
     'drive',
     'down',
     'drive_id',
-    'play_id',
-    'play_counter',
-    'play_type',
-    'qtr',
-    'action',
-    'half_seconds_remaining',
-    'game_seconds_remaining',
+    'yrdln',
     'ydstogo',
+    'ydsnet',
+    'yards_gained',
+    'play_counter',
+    'play_id',
+    'play_type',
+    'action',
+    'game_seconds_remaining',
+    'goal_to_go',
     'posteam',
     'posteam_score',
     'posteam_score_post',

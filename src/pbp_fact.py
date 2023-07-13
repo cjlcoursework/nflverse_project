@@ -6,6 +6,7 @@ from pandas import DataFrame
 from src import *
 import warnings
 
+from src.db_utils import load_dims_to_db
 from src.utils import assert_and_alert, impute_columns, get_duplicates_by_key, create_dimension
 
 warnings.filterwarnings('ignore')

@@ -125,7 +125,7 @@ def perform_workflow():
 
 
 if __name__ == '__main__':
-    load_to_db = False
+    load_to_db = True
     logger.setLevel(logging.INFO)
 
     results = perform_workflow()
