@@ -170,14 +170,17 @@ def create_player_participation(participation_df: DataFrame):
 
 
 def update_player_events(player_events_df: DataFrame, player_participation_df: DataFrame) -> DataFrame:
-
     known_fubars = {'00-0036906': 'CHI'}
 
     merge_df = pd.merge(player_events_df, player_participation_df, on=['play_id', 'player_id'], how='left',
                         suffixes=('', '_y'))
     merge_df['season'] = merge_df['season'].fillna(merge_df['season_y'])
     merge_df['game_id'] = merge_df['game_id'].fillna(merge_df['game_id_y'])
-    merge_df.drop(columns=['season_y', 'game_id_y', 'game_order'], inplace=True)
+    drop_columns = []
+    for col in merge_df.columns:
+        if str(col).endswith("_y") or str(col).endswith("_x"):
+            drop_columns.append(col)
+    merge_df.drop(columns=drop_columns, inplace=True)
 
     # Sort the DataFrame by player, season, and week
     merge_df = merge_df.sort_values(by=['player_id', 'season'])

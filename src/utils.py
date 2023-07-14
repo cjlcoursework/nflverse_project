@@ -1,3 +1,4 @@
+import numpy as np
 from typing import Union, List, Dict
 
 import pandas as pd
@@ -100,3 +101,41 @@ def get_duplicates_by_key(df, key_name):
 
     return duplicate_keys
 
+
+def big_merge(actions_df,  power_df, action_team='posteam', power_column='offense_power'):
+
+    df = pd.merge(actions_df, power_df, left_on=['season', 'week', action_team], right_on=['season', 'week', 'team'], how='left')
+    current_season = 0
+    current_team = ''
+    query_df = None
+    query_weeks = []
+    missing_df = df.loc[df[power_column].isnull()].sort_values(by=['season', 'team', 'week'])
+    for index, row in missing_df.iterrows():
+        missing_season = row['season']
+        missing_week = row['week']
+        missing_team = row['posteam']
+
+        if missing_season != current_season or missing_team != current_team:
+            # Find a replacement for the missing value based on your logic
+            query_df = power_df.loc[ (power_df.season==missing_season) & (power_df.team==missing_team)].sort_values(by='week', ascending=False)
+            if len(query_df) > 0:
+                query_weeks = np.sort(query_df['week'].to_numpy())
+            else:
+                print("nada")
+                continue
+
+        min_dif = 99
+        for week in query_weeks:
+            if abs(missing_week - week) < min_dif:
+                min_dif = week
+        df.at[index, 'offense_power'] = replacement
+
+
+
+
+
+
+        #
+        # # Update the missing value with the replacement
+        # df.at[index, 'offense_power'] = replacement
+        # df.loc[(df[power_column].isnull())]

@@ -1,70 +1,16 @@
-with play_actions as (
-    select season, week, game_id,
-           drive,
-           play_counter,
-           play_id,
-           posteam,
-           posteam_score::integer,
-           posteam_score_post::integer,
-           defteam,
-           defteam_score,
-           defteam_score_post,
-           (posteam_score - defteam_score) as point_differential,
-           down,
-           yrdln,
-           SUBSTRING(yrdln FROM '[0-9]+')::integer as yard_line,
-           SUBSTRING(yrdln FROM '[A-Za-z]+') AS side_of_field,
-           ydstogo,
-           game_seconds_remaining,
-           action,
-           yards_gained,
-           row_number() over (partition by
-               season,
-               week,
-               play_counter)                 as rn
-    from controls.play_actions
-    where action in (
-                     'extra_point',
-                     'field_goal',
-                     'pass',
-                     'rush')
-    )
-select
-    season,
-    week,
-    game_id,
-    drive,
-    play_counter,
-    posteam,
-    posteam_score,
-    posteam_score_post,
-    defteam_score,
-    defteam_score_post,
-    point_differential,
-    LEAD(posteam_score) OVER (PARTITION BY posteam ORDER BY season, week, play_counter) AS next_starting_score,
-    down,
-    ydstogo,
-    case when posteam = side_of_field then 100 - yard_line else yard_line end yards_to_goal,
-    game_seconds_remaining,
-    action,
-    yards_gained
---     case when next_starting_score > 0 then
---         next_starting_score - posteam_score
---     else
---         posteam_score_post - posteam_score
---     end as points_gained
+CREATE INDEX idx_play_acton_combined ON controls.play_actions (season, week, posteam, defteam);
+CREATE INDEX idx_power_scores_combined ON controls.power_scores (season, week, team);
 
-from play_actions
-where rn = 1
-and game_id = '2016_01_BUF_BAL' and drive=7
-order by season,
-         week,
-         game_id,
-         play_counter;
-
-
-
+CREATE TABLE controls.pbp_playcall_metrics AS
 WITH play_actions AS (
+    -- select play by play data from the play_action table
+    -- this will be our base table for building a play call dataset
+    -- get rid of clock events, penalties and other features that are not pass, rush, field goal
+    -- for example, for this dataset a PUNT is just a turnover - it's an important play call
+    --     but it's really just a way of turning the ball over - if we don't punt, the action keeps going
+    --     so the fact that we punted or did not punt on forth down is already captured in the fact that we are running a play on 4th down
+    --     in this dataset we are interested in actions and their resulting rewards
+    -- todo - we do need to get 2pt conversion into this set
     select season, week, game_id, play_id,
            drive,
            play_counter,
@@ -77,98 +23,75 @@ WITH play_actions AS (
            (posteam_score - defteam_score) as point_differential,
            down,
            yrdln,
-           SUBSTRING(yrdln FROM '[0-9]+')::integer as yard_line,
-           SUBSTRING(yrdln FROM '[A-Za-z]+') AS side_of_field,
+           SUBSTRING(yrdln FROM '[0-9]+')::integer as yard_line,   -- we'll split yrdln column e.g. 'BAL 25' --> 25
+           SUBSTRING(yrdln FROM '[A-Za-z]+') AS side_of_field,  -- we'll split yrdln column e.g. 'BAL 25' --> BAL
            ydstogo,
            game_seconds_remaining,
            action,
            yards_gained,
-           row_number() over (partition by
+           row_number() over (partition by     -- make sure we are not creating unwanted records
                season,
                week,
-               play_counter)                 as rn
+               play_counter) as rn
     from controls.play_actions
     where action in (
                      'extra_point',
                      'field_goal',
                      'pass',
                      'rush')
-    -- your original query here
 ),
 next_starting_scores AS (
+    -- intermediate step:
+    -- get the score from the next down into the current record
+    -- assign a unique row_id so we can validate it only occurs once in the final dataset
+    -- todo - validate the LEAD function - it works, but perhaps season and week should be in the partition instead of the order
      SELECT
           *,
-         LEAD(posteam_score) OVER (PARTITION BY posteam ORDER BY season, week, play_counter) AS next_starting_score
+          ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS row_id,
+          LEAD(posteam_score) OVER (PARTITION BY season, week, posteam, drive ORDER BY  play_counter) AS next_starting_score
      FROM play_actions
      WHERE rn = 1
- )
-SELECT
-    pa.season,
-    pa.week,
-    pa.game_id,
-    pa.drive,
-    pa.play_counter,
-    pa.posteam,
-    pa.posteam_score,
-    pa.posteam_score_post,
-    pa.defteam_score,
-    pa.defteam_score_post,
-    pa.point_differential,
-    ns.next_starting_score,
-    pa.down,
-    pa.ydstogo,
-    CASE WHEN pa.posteam = pa.side_of_field THEN 100 - pa.yard_line ELSE pa.yard_line END AS yards_to_goal,
-    pa.game_seconds_remaining,
-    pa.action,
-    pa.yards_gained,
-    CASE WHEN ns.next_starting_score > 0 THEN ns.next_starting_score - pa.posteam_score ELSE pa.posteam_score_post - pa.posteam_score END AS points_gained
-FROM play_actions AS pa
-         JOIN next_starting_scores AS ns ON pa.play_id = ns.play_id
-WHERE pa.rn = 1
-  AND pa.game_id = '2016_01_BUF_BAL' and pa.drive = 7
-ORDER BY pa.season, pa.week, pa.game_id, pa.play_counter;
+     ORDER BY season, week, game_id, play_counter
+ ),
+pbp_actions as (
+    -- almost final step :
+    -- join everything to this point together
+    -- but don't join in offense and defense powers here because we want to be abe to validate during development that this much does not fan out
+    -- calc yards_to_goal e.g. if we are on our own side of the field then yards-to-goal is 100 minus the yard line
+    SELECT
+        ns.row_id,
+        pa.season,
+        pa.week,
+        pa.game_id,
+        pa.drive,
+        pa.play_counter,
+        pa.posteam,
+        pa.posteam_score,
+        pa.posteam_score_post,
+        pa.defteam,
+        pa.defteam_score,
+        pa.defteam_score_post,
+        pa.point_differential,
+        ns.next_starting_score,
+        pa.down,
+        pa.ydstogo,
+        CASE WHEN pa.posteam = pa.side_of_field THEN 100 - pa.yard_line ELSE pa.yard_line END AS yards_to_goal,
+        pa.game_seconds_remaining,
+        pa.action,
+        pa.yards_gained,
+        CASE WHEN ns.next_starting_score is not null THEN ns.next_starting_score - pa.posteam_score ELSE pa.posteam_score_post - pa.posteam_score END AS points_gained
+    FROM play_actions AS pa
+             JOIN next_starting_scores AS ns ON pa.play_id = ns.play_id
+    WHERE pa.rn = 1
 
--- 2016_01_BUF_BAL
+)
+-- finally, we merge in the offense power for the team in possession of the ball and the defense power for the other team
+-- this will flip every drive
+-- we calculated offense and defense scores as the weighted averages of the features that XGBoost and our shallow neural network told us were important factor in winning games
+-- of course, that choice to rollup the features into offense and defense powers is open to further validation
+select pa.*, ps.offense_power, ds.defense_power
+from pbp_actions pa
+         JOIN controls.power_scores ps ON (ps.season = pa.season and ps.week=pa.week and ps.team = pa.posteam)
+         JOIN controls.power_scores ds ON (ds.season = pa.season and ds.week=pa.week and ds.team = pa.defteam)
+ ORDER BY pa.season, pa.week, pa.game_id, pa.play_counter;
 
---
--- select action, count(*)
--- from controls.play_actions
--- group by action;
---
--- with defense_indicators as (select team,
---                                    season,
---                                    week,
---                                    qb_hit,
---                                    tackle,
---                                    ps_interceptions,
---                                    sacks,
---                                    sack_yards,
---                                    row_number() over (partition by team,
---                                        season,
---                                        week) as rn
---                             from nfl_weekly_stats
---                             order by team, season, week)
--- select *
--- from defense_indicators
--- where rn = 1;
---
---
---
--- with offense_indicators as (select team,
---                                    season,
---                                    week,
---                                    carries,
---                                    touchdown,
---                                    passer_rating,
---                                    rushing_first_downs,
---                                    passing_air_yards,
---                                    completion_percentage,
---                                    receiving_air_yards,
---                                    row_number() over (partition by team,
---                                        season,
---                                        week) as rn
---                             from nfl_weekly_stats
---                             order by team, season, week)
--- select *
--- from offense_indicators
--- where rn = 1;
