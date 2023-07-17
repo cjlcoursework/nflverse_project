@@ -13,6 +13,23 @@ warnings.filterwarnings('ignore')
 logger = configure_logging("pbp_logger")
 
 
+# Function to calculate the new numeric column
+def calculate_yards_to_goal(row):
+    yardline = row['yrdln']
+    if yardline is None:
+        return 0
+    yardline_parts =yardline.split()
+    if len(yardline_parts) != 2:
+        return 0
+    side_of_field = yardline_parts[0]
+    numeric_value = int(yardline_parts[1])
+
+    if row['posteam'] == side_of_field:
+        return 100 - numeric_value
+    else:
+        return numeric_value
+
+
 def conform_pbp_actions(df: DataFrame):
     logger.info(
         "Conform key actions like pass, rush, kickoff, etc. and add a single category field called actions... ")
@@ -104,6 +121,8 @@ def conform_pbp_actions(df: DataFrame):
     df["defense_yards_gained"] = df["return_yards"].fillna(0)
 
     df["action"] = df["action"].fillna(df["play_type"])
+    df['yards_to_goal'] = df.apply(calculate_yards_to_goal, axis=1)
+
     actions_df = df[action_columns].copy()
 
     return actions_df
@@ -115,7 +134,7 @@ def create_player_events(df: DataFrame) -> DataFrame:
     df['rusher_player_id'] = df['rusher_player_id'].fillna("rusher")  # merge redundant info
     df['passer_player_id'] = df['passer_id'].fillna("passer")  # merge redundant info
 
-    contributions_df = pd.DataFrame(columns=['season', 'week', 'game_id', 'play_id', 'player_id', 'event'])
+    contributions_df = pd.DataFrame(columns=['season', 'week', 'game_id', 'posteam', 'defteam', 'play_counter', 'player_id', 'event'])
 
     for column_name, contribution, lineup in player_id_columns:
         foo = df.loc[
@@ -241,14 +260,12 @@ def transform_pbp(pbp_df):
     return results
 
 
-def test_loader():
-    pbp_df = pd.read_csv("../../output/playbyplay_2021.csv", low_memory=False)
+if __name__ == '__main__':
+    pbp_df = pd.read_parquet(
+        "/Users/christopherlomeli/Source/courses/datascience/Springboard/capstone/NFL/NFLVersReader/output/pbp/pbp_2016.parquet")
     results = transform_pbp(pbp_df)
     load_dims_to_db(results)
     print("Done")
 
 
-def test_job_pbp_main():
-    pbp_df = pd.read_csv("../../output/playbyplay_2021.csv", low_memory=False)
-    results = transform_pbp(pbp_df)
-    print("Done")
+

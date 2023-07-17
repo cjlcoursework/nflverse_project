@@ -3,10 +3,11 @@ from typing import Union, List, Dict
 
 import pandas as pd
 from pandas import DataFrame
-
+from sklearn.preprocessing import LabelEncoder
 
 # Configure logging
 from configs import configure_logging
+
 logger = configure_logging("pbp_logger")
 
 
@@ -57,7 +58,6 @@ def create_dimension(df,
                      additional_fields=None,
                      keys=None,
                      category="general") -> DataFrame:
-
     logger.info(f"Creating new {category} dimension...")
 
     if additional_fields is None:
@@ -102,40 +102,19 @@ def get_duplicates_by_key(df, key_name):
     return duplicate_keys
 
 
-def big_merge(actions_df,  power_df, action_team='posteam', power_column='offense_power'):
+def label_encode(labels_df: pd.DataFrame, columns: List[str]):
+    print("Shape before labels:", labels_df.shape)
 
-    df = pd.merge(actions_df, power_df, left_on=['season', 'week', action_team], right_on=['season', 'week', 'team'], how='left')
-    current_season = 0
-    current_team = ''
-    query_df = None
-    query_weeks = []
-    missing_df = df.loc[df[power_column].isnull()].sort_values(by=['season', 'team', 'week'])
-    for index, row in missing_df.iterrows():
-        missing_season = row['season']
-        missing_week = row['week']
-        missing_team = row['posteam']
+    labels = {}
 
-        if missing_season != current_season or missing_team != current_team:
-            # Find a replacement for the missing value based on your logic
-            query_df = power_df.loc[ (power_df.season==missing_season) & (power_df.team==missing_team)].sort_values(by='week', ascending=False)
-            if len(query_df) > 0:
-                query_weeks = np.sort(query_df['week'].to_numpy())
-            else:
-                print("nada")
-                continue
+    for col in columns:
+        if labels_df[col].dtype == 'object':
+            print("encode ", col)
+            encoder = LabelEncoder()
+            labels_df[col] = encoder.fit_transform(labels_df[col])
+            original_labels = encoder.inverse_transform(labels_df[col])
+            zippy = zip(labels_df[col].values, original_labels)
+            labels[col] = set(list(zippy))
 
-        min_dif = 99
-        for week in query_weeks:
-            if abs(missing_week - week) < min_dif:
-                min_dif = week
-        df.at[index, 'offense_power'] = replacement
-
-
-
-
-
-
-        #
-        # # Update the missing value with the replacement
-        # df.at[index, 'offense_power'] = replacement
-        # df.loc[(df[power_column].isnull())]
+    print("Shape after labels:", labels_df.shape)
+    return labels_df, labels

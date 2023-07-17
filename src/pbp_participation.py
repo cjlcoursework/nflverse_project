@@ -145,14 +145,14 @@ def create_player_participation(participation_df: DataFrame):
 
     logger.info("Exploding offensive players to their own dataset...")
     offense_players = explode_column_with_cols(participation_df,
-                                               ['season', 'game_id', 'game_order', 'play_id', 'possession_team'],
+                                               ['season',  'game_id', 'game_order', 'play_id', 'possession_team'],
                                                'offense_players')
     offense_players.rename(columns={'offense_players': 'player_id', 'possession_team': 'team'}, inplace=True)
     offense_players['lineup'] = 'offense'
 
     logger.info("Exploding defense_players to their own dataset...")
     defense_players = explode_column_with_cols(participation_df,
-                                               ['season', 'game_id', 'game_order', 'play_id', 'defense_team'],
+                                               ['season',  'game_id', 'game_order', 'play_id', 'defense_team'],
                                                'defense_players')
     defense_players.rename(columns={'defense_players': 'player_id', 'defense_team': 'team'}, inplace=True)
     defense_players['lineup'] = 'defense'
