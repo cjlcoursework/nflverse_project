@@ -1,5 +1,12 @@
+import os
+
 import numpy as np
 import pandas as pd
+from keras import Sequential
+from keras.src.callbacks import ModelCheckpoint
+from keras.src.layers import Dense
+from sklearn.preprocessing import MinMaxScaler
+
 from src import *
 
 logger = configure_logging("pbp_logger")
@@ -12,6 +19,15 @@ def summarize_indicators(df, feature_names, threshold):
         .sort_values(by='percentage', ascending=False).pivot_table(columns=['Feature'])
 
 
+def prepare_indicators(df,threshold):
+    feature_column_name, metric_column_name = df.columns[:2]
+
+    indicators = df.loc[(df[metric_column_name] > threshold)].copy()
+    indicators['percentage'] = indicators[metric_column_name] / indicators[metric_column_name].sum()
+
+    return indicators.sort_values(by='percentage', ascending=False).pivot_table(columns=[feature_column_name])
+
+
 def calculate_power_score(data_df, indicators, column_name):
     weighted_columns = []
     for col in indicators.columns:
@@ -22,6 +38,22 @@ def calculate_power_score(data_df, indicators, column_name):
 
     data_df[column_name] = data_df[weighted_columns].sum(axis=1)
     data_df.drop(columns=weighted_columns, inplace=True)
+
+
+def concat_power_score(df, summary_data, threshold, power_column) -> (
+        pd.DataFrame, pd.DataFrame):
+
+    # expect the first two columns to contain a feature label and a metric
+
+    logger.info("get percentage contribution of offensive and defensive features")
+    indicator_percentages = prepare_indicators(
+        df=summary_data,
+        threshold=threshold)
+
+    logger.info("calculate weighted average of offensive and defensive features")
+    calculate_power_score(df, indicator_percentages, power_column)
+
+    return df
 
 
 def build_all_game_weeks(df: pd.DataFrame, team_column) -> pd.DataFrame:
@@ -181,36 +213,61 @@ pd.DataFrame, pd.DataFrame):
     return offense_power_df, defense_power_df
 
 
+def create_shallow_model(X):
+    from keras.src.callbacks import EarlyStopping
+    from keras.src.optimizers import Adam
+    from keras import regularizers
+
+    # Set parameters
+    learning_rate = .01
+    activation_function = "relu"
+    output_function = "sigmoid"
+    loss_function = 'binary_crossentropy'
+    regularization_function = regularizers.l1(0.04)
+    optimizer=Adam(learning_rate=learning_rate)
+
+    # Create a neural network model
+    model = Sequential()
+    model.add(Dense(32, input_dim=X.shape[1], activation=activation_function, kernel_regularizer=regularization_function))
+    model.add(Dense(32, activation=activation_function, kernel_regularizer=regularization_function))
+    model.add(Dense(1, activation=output_function))  # Single output neuron for binary classification
+
+    model.compile(
+        optimizer=optimizer,
+        loss=loss_function,
+        metrics=['accuracy']
+    )
+
+    # Define the EarlyStopping callback
+    early_stopping_callback = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+
+    callbacks = [early_stopping_callback]
+
+    # Train the model
+    return model, callbacks
+
+
+def prepare_power_data(original_stats_df):
+    logger.info("encode the target win/loss column")
+    original_stats_df['target'] = np.where(original_stats_df['win'] == 'win', 1,
+                                           np.where(original_stats_df['win'] == 'loss', 0, 2) )
+
+    logger.info("create a features dataframe for feature selection ...")
+    raw_features_df = original_stats_df.drop(columns=['season', 'week','team', 'win', 'spread','team_coach', 'opposing_coach', 'count', 'team_score', 'opposing_team', 'opposing_score' ])
+
+    logger.info("scale all features  ...")
+    scaler = MinMaxScaler()
+
+    features = scaler.fit_transform(raw_features_df.to_numpy())
+    features_df = pd.DataFrame(features, columns=raw_features_df.columns)
+
+    return features_df
+
+
 if __name__ == '__main__':
-    # db = database_loader.DatabaseLoader(get_config('connection_string'))
-    # all_team_weeks = db.query_to_df(
-    #     """select posteam as team, season, week, count(*) from controls.play_actions group by posteam, season, week order by posteam, season, week"""
-    # )
-    #
-    # pbp = "/Users/christopherlomeli/Source/courses/datascience/Springboard/capstone/NFL/NFLVersReader/data/nfl/pbp_actions.parquet"
-    # df = pd.read_parquet(pbp)
+    file_name = "nfl_weekly_offense"
+    data_directory = get_config('data_directory')
 
-    # all_weeks = build_all_game_weeks(df, 'posteam')
-
-    weeks = pd.DataFrame(
-        [
-            {'season': 2016, 'week': 1, 'team': 'ARI'},
-            {'season': 2016, 'week': 2, 'team': 'ARI'},
-            {'season': 2016, 'week': 3, 'team': 'ARI'},
-            {'season': 2016, 'week': 4, 'team': 'ARI'},
-            {'season': 2016, 'week': 1, 'team': 'KC'},
-            {'season': 2016, 'week': 2, 'team': 'KC'},
-            {'season': 2016, 'week': 3, 'team': 'KC'},
-            {'season': 2016, 'week': 4, 'team': 'KC'}
-        ]
-    )
-    df = pd.DataFrame(
-        [
-            {'season': 2016, 'week': 2, 'team': 'ARI', 'metric1': 0.1,  'metric2': 0.2,  'metric3': 0.3,  'metric4': 0.4 },
-            {'season': 2016, 'week': 2, 'team': 'KC', 'metric1': 1.1,  'metric2': 1.2,  'metric3': 1.3,  'metric4': 1.4 },
-            {'season': 2016, 'week': 3, 'team': 'KC', 'metric1': 2.1,  'metric2': 2.2,  'metric3': 2.3,  'metric4': 2.4 },
-        ]
-    )
-
-    df = backfill_missing_metrics(df, weeks)
+    input_path = os.path.join(data_directory,  f"{file_name}.parquet")
+    stats_df = pd.read_parquet(input_path)
     print("Done")
