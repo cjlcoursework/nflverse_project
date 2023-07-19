@@ -5,6 +5,20 @@ import pandas as pd
 configurations = {
     'project_name': "nfl",
     'file_type': "parquet",
+
+    'action_week_prep':  'tmp_weekly_play_actions',
+    'offense_week_prep': 'tmp_weekly_offense',
+    'defense_week_prep': 'tmp_weekly_defense',
+
+    'action_week_features': 'tmp_action_week_features',
+    'offense_week_features': 'tmp_offense_week_features',
+    'defense_week_features': 'tmp_defense_week_features',
+    'features_model': 'features_model',
+
+    'game_stats': 'weekly_game_stats',
+
+
+
     'pbp_url': 'https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_{year}.{file_type}',
     'pbp_participation_url': 'https://github.com/nflverse/nflverse-data/releases/download/pbp_participation/pbp_participation_{year}.{file_type}',
     'injuries_url': 'https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_{year}.{file_type}',
