@@ -54,7 +54,7 @@ def calc_feature_importance(X: pd.DataFrame, y: pd.Series, top_n=30) -> (pd.Data
     return df, set(top_features)
 
 
-def print_f1_scores(y_test, y_pred):
+def print_f1_scores(y_pred, y_test):
     # Calculate precision, recall, and F1 scores
     precision = precision_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)

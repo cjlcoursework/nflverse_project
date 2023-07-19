@@ -7,6 +7,7 @@ from src import *
 import warnings
 
 from src.db_utils import load_dims_to_db
+from src.inline_validation import perform_inline_play_action_tests
 from src.utils import assert_and_alert, impute_columns, get_duplicates_by_key, create_dimension
 
 warnings.filterwarnings('ignore')
@@ -209,6 +210,7 @@ def transform_pbp(pbp_df):
     # separate the key 'play call' and milestone columns into a fact dimension
     actions_df = conform_pbp_actions(df)
     validate_dimension(actions_df, "actions", data_size)
+    perform_inline_play_action_tests(actions_df)
 
     # separate information pertaining to the 'drive' into a fact dimension
     drive_df = create_dimension(df, columns=drive_columns, category="drive",
@@ -264,7 +266,7 @@ if __name__ == '__main__':
     pbp_df = pd.read_parquet(
         "/Users/christopherlomeli/Source/courses/datascience/Springboard/capstone/NFL/NFLVersReader/output/pbp/pbp_2016.parquet")
     results = transform_pbp(pbp_df)
-    load_dims_to_db(results)
+    # load_dims_to_db(results)
     print("Done")
 
 

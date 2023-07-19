@@ -5,8 +5,9 @@ import pandas as pd
 from keras import Sequential
 from keras.src.callbacks import ModelCheckpoint
 from keras.src.layers import Dense
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
-
+from keras.utils import to_categorical
 from src import *
 
 logger = configure_logging("pbp_logger")
@@ -19,7 +20,7 @@ def summarize_indicators(df, feature_names, threshold):
         .sort_values(by='percentage', ascending=False).pivot_table(columns=['Feature'])
 
 
-def prepare_indicators(df,threshold):
+def prepare_indicators(df, threshold):
     feature_column_name, metric_column_name = df.columns[:2]
 
     indicators = df.loc[(df[metric_column_name] > threshold)].copy()
@@ -42,7 +43,6 @@ def calculate_power_score(data_df, indicators, column_name):
 
 def concat_power_score(df, summary_data, threshold, power_column) -> (
         pd.DataFrame, pd.DataFrame):
-
     # expect the first two columns to contain a feature label and a metric
 
     logger.info("get percentage contribution of offensive and defensive features")
@@ -150,7 +150,7 @@ def backfill_missing_metrics(metrics_df, all_weeks, label='metrics') -> pd.DataF
 
 
 def build_power_datasets(weekly_stats_df, summary_data, offense_features, defense_features) -> (
-pd.DataFrame, pd.DataFrame):
+        pd.DataFrame, pd.DataFrame):
     logger.info("get percentage contribution of offensive and defensive features")
     offense_indicators = summarize_indicators(
         summary_data,
@@ -182,7 +182,7 @@ pd.DataFrame, pd.DataFrame):
 
 
 def build_combined_power_datasets(weekly_stats_df, summary_data, offense_features, defense_features) -> (
-pd.DataFrame, pd.DataFrame):
+        pd.DataFrame, pd.DataFrame):
     logger.info("get percentage contribution of offensive and defensive features")
     offense_indicators = summarize_indicators(
         summary_data,
@@ -213,24 +213,37 @@ pd.DataFrame, pd.DataFrame):
     return offense_power_df, defense_power_df
 
 
-def create_shallow_model(X):
-    from keras.src.callbacks import EarlyStopping
-    from keras.src.optimizers import Adam
+def create_shallow_model(X, y,
+                         epochs_size=200,
+                         batch_size=32,
+                         learning_rate=.001,
+                         activation_function="relu",
+                         output_function="sigmoid",
+                         loss_function='binary_crossentropy'):
+    from keras.callbacks import EarlyStopping
+    from keras.optimizers import Adam
     from keras import regularizers
+    from sklearn.preprocessing import LabelEncoder
+
+    # # Convert labels to one-hot encoded format
+    # label_encoder = LabelEncoder()
+    # encoded_labels = label_encoder.fit_transform(y)
+    # encoded_labels = to_categorical(encoded_labels)
 
     # Set parameters
-    learning_rate = .01
-    activation_function = "relu"
-    output_function = "sigmoid"
-    loss_function = 'binary_crossentropy'
-    regularization_function = regularizers.l1(0.04)
-    optimizer=Adam(learning_rate=learning_rate)
+    regularization_function = regularizers.l1(0.001)
+    optimizer = Adam(learning_rate=learning_rate)
 
     # Create a neural network model
     model = Sequential()
-    model.add(Dense(32, input_dim=X.shape[1], activation=activation_function, kernel_regularizer=regularization_function))
-    model.add(Dense(32, activation=activation_function, kernel_regularizer=regularization_function))
-    model.add(Dense(1, activation=output_function))  # Single output neuron for binary classification
+    model.add(
+        Dense(246, input_dim=X.shape[1], activation=activation_function, kernel_regularizer=regularization_function))
+    model.add(Dense(164, activation=activation_function, kernel_regularizer=regularization_function))
+    model.add(Dense(100, activation=activation_function, kernel_regularizer=regularization_function))
+    model.add(Dense(100, activation=activation_function))
+    model.add(Dense(32, activation=activation_function))
+    model.add(Dense(32, activation=activation_function))
+    model.add(Dense(2, activation=output_function))
 
     model.compile(
         optimizer=optimizer,
@@ -239,21 +252,25 @@ def create_shallow_model(X):
     )
 
     # Define the EarlyStopping callback
-    early_stopping_callback = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+    early_stopping_callback = EarlyStopping(monitor='val_accuracy', patience=7, restore_best_weights=True)
 
     callbacks = [early_stopping_callback]
 
     # Train the model
-    return model, callbacks
+    result = model.fit(X, y, epochs=epochs_size, batch_size=batch_size, callbacks=callbacks, validation_split=0.1)
+
+    return model, result
 
 
 def prepare_power_data(original_stats_df):
     logger.info("encode the target win/loss column")
     original_stats_df['target'] = np.where(original_stats_df['win'] == 'win', 1,
-                                           np.where(original_stats_df['win'] == 'loss', 0, 2) )
+                                           np.where(original_stats_df['win'] == 'loss', 0, 2))
 
     logger.info("create a features dataframe for feature selection ...")
-    raw_features_df = original_stats_df.drop(columns=['season', 'week','team', 'win', 'spread','team_coach', 'opposing_coach', 'count', 'team_score', 'opposing_team', 'opposing_score' ])
+    raw_features_df = original_stats_df.drop(
+        columns=['season', 'week', 'team', 'win', 'spread', 'team_coach', 'opposing_coach', 'count', 'team_score',
+                 'opposing_team', 'opposing_score'])
 
     logger.info("scale all features  ...")
     scaler = MinMaxScaler()
@@ -268,6 +285,6 @@ if __name__ == '__main__':
     file_name = "nfl_weekly_offense"
     data_directory = get_config('data_directory')
 
-    input_path = os.path.join(data_directory,  f"{file_name}.parquet")
+    input_path = os.path.join(data_directory, f"{file_name}.parquet")
     stats_df = pd.read_parquet(input_path)
     print("Done")
