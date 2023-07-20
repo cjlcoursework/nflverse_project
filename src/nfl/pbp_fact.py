@@ -28,7 +28,7 @@ def calculate_yards_to_goal(row):
 
 def conform_pbp_actions(df: DataFrame):
     logger.info(
-        "Conform key actions like pass, rush, kickoff, etc. and add a single category field called actions... ")
+        "Conform key actions like pass, rush, kickoff, etc.... ")
     if 'action' not in df:
         df['action'] = None
 

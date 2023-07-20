@@ -54,7 +54,7 @@ def merge_offensive_stats(game_df: DataFrame, possession_stats: DataFrame, ngs_a
     possession_stats = pd.merge(possession_stats, game_df, on=['season', 'week', 'team'])
 
     logger.info(
-        f"possession_stats before: {starting_shape}, after game_info: {possession_stats.shape} -ok - these look like garbage rows and it's only 149 ")
+        f"offense_shape before: {starting_shape}, after : {possession_stats.shape}")
 
     assert_and_alert(0 == possession_stats.isnull().sum().sum(), msg=f"found unexpected nulls in possession_stats")
     check_for_merge_columns(possession_stats)
@@ -66,7 +66,7 @@ def merge_defensive_stats(game_df: DataFrame, pbp_events: DataFrame, defense_sta
 
     starting_shape = defense_stats.shape
     defense_stats = pd.merge(defense_stats, pbp_events, on=['season', 'week', 'team'])
-    logger.info(f"possession_stats before: {starting_shape}, after: {defense_stats.shape}")
+    logger.info(f"defense shape before: {starting_shape}, after: {defense_stats.shape}")
 
     assert_and_alert(starting_shape[0] == defense_stats.shape[0],
                      msg=f"possession_stats before: {starting_shape}, after: {defense_stats.shape}")
@@ -74,7 +74,7 @@ def merge_defensive_stats(game_df: DataFrame, pbp_events: DataFrame, defense_sta
     defense_stats = pd.merge(defense_stats, game_df, on=['season', 'week', 'team'])
 
     logger.info(
-        f"defense_stats before: {starting_shape}, after game_info: {defense_stats.shape} -ok - these look like garbage rows, not needed for this application ")
+        f"defense_stats before: {starting_shape}, after game_info: {defense_stats.shape} ")
 
     assert_and_alert(0 == defense_stats.isnull().sum().sum(), msg=f"found unexpected nulls in possession_stats")
     check_for_merge_columns(defense_stats)
@@ -109,12 +109,12 @@ def build_weekly_datasets():
     possession_stats = backfill_missing_metrics(possession_stats, all_team_weeks, 'possession_stats')
     ngs_air_power = backfill_missing_metrics(ngs_air_power, all_team_weeks, 'ngs_air_power')
 
-    calc_coverage("ngs_air_power  ", ngs_air_power)
-    calc_coverage("ngs_ground_power ", ngs_ground_power)
-    calc_coverage("pbp_events  ", pbp_events)
-    calc_coverage("defense_stats  ", defense_stats)
-    calc_coverage("possession_stats  ", possession_stats)
-    calc_coverage("game info  ", game_df)
+    # calc_coverage("ngs_air_power  ", ngs_air_power)
+    # calc_coverage("ngs_ground_power ", ngs_ground_power)
+    # calc_coverage("pbp_events  ", pbp_events)
+    # calc_coverage("defense_stats  ", defense_stats)
+    # calc_coverage("possession_stats  ", possession_stats)
+    # calc_coverage("game info  ", game_df)
 
     all_offense_stats = merge_offensive_stats(game_df, possession_stats, ngs_air_power, ngs_ground_power)
     all_defense_stats = merge_defensive_stats(game_df, pbp_events, defense_stats)

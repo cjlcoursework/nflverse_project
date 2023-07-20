@@ -10,7 +10,7 @@ tests = {
 
 
 def check_values(df: pd.DataFrame, game_id, testcase: dict, msg):
-    logger.info(f"Validating game {game_id} values at location: {msg}...")
+    logger.info(f"{msg}...")
     # Filter the DataFrame based on the game_id and select the 'down' and 'yards_gained' columns
     filtered_df = df.loc[df['game_id'] == game_id, ['down', 'yards_gained']]
 

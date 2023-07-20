@@ -46,7 +46,7 @@ def read_source(url, output_dir, local_file_base, schema_file_path=None, silent=
         # Write to the local_file_path
         with open(full_path, "wb") as file:
             file.write(response.content)
-            logger.info(f"Success: {url}")
+            logger.info(f"Downloaded: {base_file_name}")
 
         # validate against the schema if one was sent in
         if schema_file_path is not None:

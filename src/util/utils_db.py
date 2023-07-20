@@ -37,7 +37,7 @@ def store_df(df, file_name, db=None, schema='public'):
         os.makedirs(data_directory)
     output_path = os.path.join(data_directory, f"{file_name}.parquet")
 
-    logger.info(f"writing file {file_name}  to {output_path}")
+    logger.info(f"writing file {file_name}")
     df.to_parquet(output_path, engine='fastparquet', compression='snappy')
     if db is not None:
         logger.info(f"writing table {file_name} in schema {schema}")

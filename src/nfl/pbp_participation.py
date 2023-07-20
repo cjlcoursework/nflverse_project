@@ -12,8 +12,7 @@ logger = configure_logging("pbp_logger")
 
 def conform_participation_keys(participation_df):
     logger.info(
-        "pbp_participation:  move play_id to a play_count column and create a unique play_id that can be used in "
-        "joins...")
+        "pbp_participation:  create a joinable play_id column ...")
     participation_df.rename(columns={'nflverse_game_id': 'game_id'}, inplace=True)
     participation_df['play_counter'] = participation_df['play_id']
     participation_df['play_id'] = participation_df["game_id"].astype(str) + "_" + participation_df[
@@ -162,7 +161,7 @@ def create_player_participation(participation_df: DataFrame):
 
     assert_and_alert(
         player_count - len(players) < 100,
-        msg=f"combining offense and defense players - counts are incorrect {player_count} != {len(players)}"
+        msg=f"count after merge: {player_count} != {len(players)}"
     )
 
     return players
