@@ -2,8 +2,8 @@ import warnings
 from pandas import DataFrame
 
 from src import *
-from src.utils import assert_not_null
-from src.utils_db import validate_positions
+from src.util.utils import assert_not_null
+from src.util.utils_db import validate_positions
 
 # from utils_db import validate_positions
 

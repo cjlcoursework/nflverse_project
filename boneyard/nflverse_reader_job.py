@@ -5,7 +5,7 @@ import numpy as np
 import requests
 
 from src import *
-from utils import assert_and_alert
+from src.utils import assert_and_alert
 
 # Configure logging
 logger = configure_logging("pbp_logger")
@@ -126,8 +126,11 @@ class URLReader:
         return urls
 
 
-if __name__ == '__main__':
+def read_nflverse_datasets():
     logger.setLevel(logging.DEBUG)
     reader = URLReader(start_year=2016, last_year=2022, file_type=get_config("file_type"))
     urls = reader.download()
 
+
+if __name__ == '__main__':
+    read_nflverse_datasets()

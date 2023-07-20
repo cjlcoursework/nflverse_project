@@ -146,15 +146,15 @@ def convert_all_files_in_path(dbloader, root_directory, schema='public'):
     done.add(table_name)
 
 
-if __name__ == '__main__':
-    connection_string = get_config('connection_string')
-    files_directory = get_config('output_directory')
-
-    dbloader = database_loader.DatabaseLoader(connection_string)
-
-    convert_all_files_in_path(dbloader, files_directory, schema='controls')
-
-    logger.info(" --- Load stats ---")
-    for i in dbloader.load_stats:
-        logger.info(i)
+# if __name__ == '__main__':
+#     connection_string = get_config('connection_string')
+#     files_directory = get_config('output_directory')
+#
+#     dbloader = database_loader.DatabaseLoader(connection_string)
+#
+#     convert_all_files_in_path(dbloader, files_directory, schema='controls')
+#
+#     logger.info(" --- Load stats ---")
+#     for i in dbloader.load_stats:
+#         logger.info(i)
 

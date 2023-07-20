@@ -1,9 +1,9 @@
 import warnings
 from pandas import DataFrame
 
-from inline_validation import perform_inline_play_action_tests
 from src import *
-from utils import assert_and_alert, impute_columns, get_duplicates_by_key, create_dimension
+from src.nfl.inline_validation import perform_inline_play_action_tests
+from src.util.utils import assert_and_alert, impute_columns, get_duplicates_by_key, create_dimension
 
 warnings.filterwarnings('ignore')
 logger = configure_logging("pbp_logger")

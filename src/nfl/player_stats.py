@@ -5,7 +5,7 @@ from src import *
 
 import warnings
 
-from src.utils import assert_not_null, assert_and_alert, impute_columns
+from src.util.utils import assert_and_alert, impute_columns, assert_not_null
 
 warnings.filterwarnings('ignore')
 logger = configure_logging("pbp_logger")
