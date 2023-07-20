@@ -46,7 +46,8 @@ def read_source(url, output_dir, local_file_base, schema_file_path=None, silent=
         # Write to the local_file_path
         with open(full_path, "wb") as file:
             file.write(response.content)
-            logger.info(f"Downloaded: {base_file_name}")
+            logger.debug(f"Downloaded: {base_file_name}")
+            print(".", end="")
 
         # validate against the schema if one was sent in
         if schema_file_path is not None:
@@ -98,7 +99,6 @@ class URLReader:
 
     def download(self):
         urls = self.get_urls()
-
         test_only = False
 
         if not os.path.exists(self.output_directory):
@@ -122,13 +122,16 @@ class URLReader:
                 except Exception as e:
                     logger.info(f'Error occurred: {str(e)}')
 
+
         return urls
 
 
 def read_nflverse_datasets():
     logger.setLevel(logging.DEBUG)
     reader = URLReader(start_year=2016, last_year=2022, file_type=get_config("file_type"))
+    logger.info("begin downloads ...")
     urls = reader.download()
+    logger.info("downloads complete ...")
 
 
 if __name__ == '__main__':

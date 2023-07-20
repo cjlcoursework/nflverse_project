@@ -135,7 +135,7 @@ def load_files(data_subdir: str) -> Optional[DataFrame]:
     # Iterate over each CSV file and load it into a DataFrame
     record_count = 0
     for file in data_files:
-        logger.info(f"  + Reading {os.path.basename(file)}")
+        logger.debug(f"  + Reading {os.path.basename(file)}")
         func = get_read_function(file)
         df = func(file)
         record_count += len(df)
