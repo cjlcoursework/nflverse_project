@@ -51,7 +51,7 @@ def train_team_week_model(model, X, y,
                        callbacks=callbacks,
                        validation_split=0.1)
 
-    return model, result
+    return result
 
 
 def execute_team_week_model(X, y,

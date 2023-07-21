@@ -26,10 +26,10 @@ configurations = {
     'players_url': 'https://github.com/nflverse/nflverse-data/releases/download/players/players.{file_type}',
     'ng_stats_url': 'https://github.com/nflverse/nflverse-data/releases/download/nextgen_stats/ngs_{year}_{stat_type}.csv.gz',
     'ng_stats_types': ['passing', 'rushing', 'receiving'],
-    'output_directory': "/Users/christopherlomeli/Source/courses/datascience/Springboard/capstone/NFL/NFLVersReader/output",
+    'output_directory': "/Users/christopherlomeli/Source/courses/datascience/Springboard/capstone/NFL/NFLVersReader/data/raw",
     'data_directory': "/Users/christopherlomeli/Source/courses/datascience/Springboard/capstone/NFL/NFLVersReader/data/nfl",
 
-    'model_directory': "/Users/christopherlomeli/Source/courses/datascience/Springboard/capstone/NFL/NFLVersReader/model",
+    'model_directory': "/Users/christopherlomeli/Source/courses/datascience/Springboard/capstone/NFL/NFLVersReader/models",
 
     'schema_directory': "/Users/christopherlomeli/Source/courses/datascience/Springboard/capstone/NFL/NFLVersReader/schemas",
     'connection_string': 'postgresql://postgres:chinois1@localhost',

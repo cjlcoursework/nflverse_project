@@ -1,8 +1,7 @@
 import pandas as pd
+import warnings
 from pandas import DataFrame
 
-
-import warnings
 from src import configure_logging
 from src.util.utils import assert_and_alert, get_duplicates_by_key, explode_column_with_cols
 
@@ -10,7 +9,18 @@ warnings.filterwarnings('ignore')
 logger = configure_logging("pbp_logger")
 
 
-def conform_participation_keys(participation_df):
+def conform_participation_keys(participation_df: DataFrame) -> DataFrame:
+    """
+    Cleanup and conform key names and check for duplicates
+
+    Parameters:
+        participation_df (pd.DataFrame): The participation dataset from nflverse
+
+    Returns:
+        participation_df (pd.DataFrame): The wrangled data
+
+    """
+
     logger.info(
         "pbp_participation:  create a joinable play_id column ...")
     participation_df.rename(columns={'nflverse_game_id': 'game_id'}, inplace=True)
@@ -22,7 +32,20 @@ def conform_participation_keys(participation_df):
     return participation_df
 
 
-def reconcile_join_keys(pbp_df, participation_df):
+def reconcile_join_keys(pbp_df: DataFrame, participation_df: DataFrame):
+    """
+    Cleanup and conform key names and check for duplicates.
+    We want to verify that the two datasets will join properly
+
+    Parameters:
+        pbp_df (pd.DataFrame): The original pbp data from nflverse
+        participation_df (pd.DataFrame): The original participation dataset from nflverse
+
+    Returns:
+        None - we'll alert if any checks fail
+
+    """
+
     # Try to join pbp and participations tabkes
     logger.info("Ensure that pbp and pbp_participation are merge-able...")
 
@@ -76,60 +99,20 @@ def reconcile_join_keys(pbp_df, participation_df):
     logger.info(f"\n{merged_df['_merge'].value_counts()}")
 
 
-# def update_player_lists(events_df: DataFrame, participation_df: DataFrame):
-#     logger.info("Add team names to the players_df table ...")
-#
-#     # looking for any lineup columns in events
-#     events_df['lineup'] = events_df['lineup'].fillna(
-#         events_df['player_id'].map(participation_df.set_index('player_id')['lineup']))
-#
-#     lookup_dict = participation_df.set_index(['season', 'week', 'player'])['lineup'].to_dict()
-#     events_df['team'] = events_df.apply(lambda row: row['lineup'] if pd.notnull(row['lineup']) else lookup_dict.get((row['season'], row['week'], row['player'])), axis=1)
-#
-#
-#     # create an index column to lookup the team based on the play
-#     offense_teams = events_df[['season', 'week', 'play_id', 'posteam']] \
-#         .drop_duplicates() \
-#         .rename(columns={'posteam': 'team'})
-#
-#     # confrm the team names to 'team'
-#     defense_teams = events_df[['season', 'week', 'play_id', 'defteam']] \
-#         .drop_duplicates() \
-#         .rename(columns={'defteam': 'team'})
-#
-#     # separate the players_df into offense and defense plays
-#     offense_players = participation_df[participation_df['lineup'] == 'offense']
-#     offense_merged_df = pd.merge(offense_players, offense_teams, on='play_id').drop_duplicates()
-#     assert_and_alert(offense_players.shape[0] == offense_merged_df.shape[0],
-#                      msg=f'merge on offensive players fanned out {offense_players.shape[0]} !== {offense_merged_df.shape[0]}')
-#
-#     # merge the offense players with their team and same for the defense players
-#     defense_players = participation_df[participation_df['lineup'] == 'defense']
-#     defense_merged_df = pd.merge(defense_players, defense_teams, on='play_id').drop_duplicates()
-#     assert_and_alert(defense_players.shape[0] == defense_merged_df.shape[0],
-#                      msg=f'merge on defensive players fanned out {defense_players.shape[0]} !== {defense_merged_df.shape[0]}')
-#
-#     # merge off
-#     player_participation_df = pd.concat([offense_merged_df, defense_merged_df])
-#
-#     # update player events - get the right team for each player in the play\
-#     # player_teams = player_participation_df[['play_id', 'player_id', 'team']].drop_duplicates()
-#     # merged_df = pd.merge(events_df, player_teams, on=['player_id', 'play_id'], how="outer", indicator=True)
-#
-#     return player_participation_df
+def create_player_participation(participation_df: DataFrame) -> DataFrame:
 
+    """
+    Explode the offense and defense arrays in participation_df
+    into a separate dataset that has one row per player
 
-# def update_player_events(player_events: DataFrame, pbp_participation: DataFrame):
-#     """
-#     with player_teams as (select distinct player_id, game_id, team  from  player_participation)
-#         select count(*) from player_events E
-#          full join player_teams T on T.player_id=E.player_id and T.game_id = E.game_id
-#     """
-#     player_teams = pbp_participation[['game_id', 'player_id', 'team']].drop_duplicates()
-#     merged_df = pd.merge(player_events, player_teams, on=['player_id', 'game_id'], how="outer", indicator=True)
+    Parameters:
+         participation_df (pd.DataFrame): The original participation dataset from nflverse
 
+    Returns:
+         players (pd.DataFrame): The exploded offense and defense datasets concatenated into a single dataset
 
-def create_player_participation(participation_df: DataFrame):
+    """
+
     logger.info("Calculating defense and offense team names by player and play...")
     participation_df[['season', 'game_order', 'home_team', 'away_team']] = \
         participation_df['game_id'].str.split('_', expand=True)[[0, 1, 2, 3]]
@@ -143,18 +126,19 @@ def create_player_participation(participation_df: DataFrame):
 
     logger.info("Exploding offensive players to their own dataset...")
     offense_players = explode_column_with_cols(participation_df,
-                                               ['season',  'game_id', 'game_order', 'play_id', 'possession_team'],
+                                               ['season', 'game_id', 'game_order', 'play_id', 'possession_team'],
                                                'offense_players')
     offense_players.rename(columns={'offense_players': 'player_id', 'possession_team': 'team'}, inplace=True)
     offense_players['lineup'] = 'offense'
 
     logger.info("Exploding defense_players to their own dataset...")
     defense_players = explode_column_with_cols(participation_df,
-                                               ['season',  'game_id', 'game_order', 'play_id', 'defense_team'],
+                                               ['season', 'game_id', 'game_order', 'play_id', 'defense_team'],
                                                'defense_players')
     defense_players.rename(columns={'defense_players': 'player_id', 'defense_team': 'team'}, inplace=True)
     defense_players['lineup'] = 'defense'
 
+    logger.info("Merge offense & defense players into a single dataset ...")
     player_count = defense_players.shape[0] + offense_players.shape[0]
 
     players = pd.concat([offense_players, defense_players], axis=0).dropna().drop_duplicates()
@@ -168,22 +152,39 @@ def create_player_participation(participation_df: DataFrame):
 
 
 def update_player_events(player_events_df: DataFrame, player_participation_df: DataFrame) -> DataFrame:
+
+    """
+    Explode the offense and defense arrays in participation_df
+    into a separate dataset that has one row per player
+
+    Parameters:
+         player_events_df (pd.DataFrame): The player events (e.g. fumble_player_id) from the original pbp data
+         player_participation_df (pd.DataFrame): The player level data with one row per player
+
+    Returns:
+         merge_df (pd.DataFrame): The player_events_df dataset with merged info from player_participation_df
+
+    """
+
     known_fubars = {'00-0036906': 'CHI'}
 
+    # both datasets should have one row per player
     merge_df = pd.merge(player_events_df, player_participation_df, on=['play_id', 'player_id'], how='left',
                         suffixes=('', '_y'))
+
     merge_df['season'] = merge_df['season'].fillna(merge_df['season_y'])
     merge_df['game_id'] = merge_df['game_id'].fillna(merge_df['game_id_y'])
     drop_columns = []
     for col in merge_df.columns:
         if str(col).endswith("_y") or str(col).endswith("_x"):
             drop_columns.append(col)
+
     merge_df.drop(columns=drop_columns, inplace=True)
 
     # Sort the DataFrame by player, season, and week
     merge_df = merge_df.sort_values(by=['player_id', 'season'])
 
-    # Group the DataFrame by player and season, and fill any null team_id
+    # Group the DataFrame by player and season, and fill any null team_ids
     merge_df['team'] = merge_df.groupby(['player_id', 'season'])['team'].fillna(method='ffill')
     merge_df['team'] = merge_df.groupby(['player_id', 'season'])['team'].fillna(method='bfill')
 
@@ -193,7 +194,25 @@ def update_player_events(player_events_df: DataFrame, player_participation_df: D
     return merge_df
 
 
-def transform_pbp_participation(participation_df, player_events):
+def transform_pbp_participation(participation_df: DataFrame, player_events: DataFrame) -> (DataFrame, DataFrame):
+    """
+    This is the main function for all cleanup routines for the participation dataset
+    The participation dataset contains offense and defense arrays of players (player_ids) who participated in each play
+    But those player_ids can't link to other player-event player_ids like tackle_player_id
+
+    We explode the offense and defense arrays into a new dataset that contains one row for each player,
+    and use that exploded data to identify the player and team for events like tackle, sack, receiver, etc. that come from player_events
+
+    Parameters:
+        participation_df (pd.DataFrame): The play-by-play (pbp) dataset from nflverse
+        player_events (pd.DataFrame): The events (e.g. tackle, sack, receiver, etc) scraped from play-by-play dataset
+
+    Returns:
+        players_participation_df (pd.DataFrame): The exploded dataframe with one row per player
+        player_events (pd.DataFrame): The payer_events data enriched with additional info from players_participation_df
+
+    """
+
     participation_df = conform_participation_keys(participation_df)
     players_participation_df = create_player_participation(participation_df)
     player_events = update_player_events(player_events, players_participation_df)
