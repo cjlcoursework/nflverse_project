@@ -59,15 +59,22 @@ def plot_correlations(scores: Any, features: Any, title: str):
 def plot_heatmap(df, drop_columns):
     numeric_df = df.select_dtypes(include='number').drop(columns=drop_columns)
     correlation_matrix = numeric_df.corr()
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(15, 10))
     plt.imshow(correlation_matrix, cmap='coolwarm', interpolation='nearest')
     plt.colorbar()
     plt.title('Heatmap')
 
+    new_font_size = 6  # Reduce by about 1/3rd
+
     # Set x-axis and y-axis labels
-    plt.xticks(np.arange(len(numeric_df.columns)), numeric_df.columns, rotation=45)
-    plt.yticks(np.arange(len(numeric_df.columns)), numeric_df.columns)
+    plt.xticks(np.arange(len(numeric_df.columns)), numeric_df.columns, rotation=45, fontsize=new_font_size)
+
+    # Calculate the new font size for y-axis labels
+    current_font_size = plt.rcParams['ytick.labelsize']
+
+    plt.yticks(np.arange(len(numeric_df.columns)), numeric_df.columns, fontsize=new_font_size)
     plt.show()
+
 
 
 def hist_charts(df):
@@ -132,3 +139,5 @@ def correlate_to_target(df: pd.DataFrame, target_column: str, top_n: int) -> (pd
     s = set(df['y'].values)
 
     return df, s
+
+#%%
