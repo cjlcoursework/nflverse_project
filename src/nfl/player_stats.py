@@ -13,6 +13,7 @@ logger = configure_logging("pbp_logger")
 
 empty_headshot_url = 'none'
 
+# todo - move this to config
 player_stats_impute_to_zero = [
     "completions",
     "attempts",
@@ -60,29 +61,12 @@ player_stats_impute_to_zero = [
 droppable_players = ["Arthur Williams", "Frank Stephens"]
 
 
-def check_merge(merged_df, stats_df):
-    logger.info("Validate the players + player_stats merge...")
-
-    n = len(merged_df)
-    sn = len(stats_df)
-    total_stats = len(stats_df)
-    stats_without_players = (merged_df['_merge'] == 'left_only').sum() / n
-    player_without_stats = (merged_df['_merge'] == 'right_only').sum() / n
-    inner_joins = (merged_df['_merge'] == 'both').sum()
-    inner_join_percentage = inner_joins / n
-    stats_completeness = inner_joins / total_stats
-
-    logger.info(f"The stats dataset has {sn} records")
-    logger.info(f"The merged dataset has {n} records")
-    logger.info(f"percent of stats_without_players: {stats_without_players}")
-    logger.info(f"percent of players_without_stats - this is common: {player_without_stats}")
-    logger.info(f"percent of matched players and stats : {inner_join_percentage}")
-    logger.info(f"percent of stats that were consumed in the join: {stats_completeness}")
-
-    assert_and_alert(assertion=stats_completeness > .98,
-                     msg=f"expected at least 98% of player_stats to be linked to players: percentage={stats_completeness}")
-    assert_and_alert(assertion=stats_without_players < .01,
-                     msg=f"stats_without_players should be zero: percentage={stats_without_players}")
+def player_stats_fixes():
+    return list([
+        ('00-0027567', 'Steve Maneri', 'TE'),
+        ('00-0028543', 'Jeff Maehl', 'WR'),
+        ('00-0025569', 'Adam Hayward', 'LB'),
+        ('00-0029675', 'Trent Richardson', 'RB')])
 
 
 def check_keys(df):
@@ -96,19 +80,29 @@ def check_keys(df):
         msg="Found unexpected Nulls in player_stats ")
 
 
-#
-#  player_stats
-#
-def merge_injuries(player_stats: DataFrame, player_injuries: DataFrame) -> DataFrame:
-    df = pd.merge(player_stats,
-                  player_injuries[['season', 'week', 'player_id', 'primary_injury', 'report_status', 'practice_status']],
+def merge_injuries(player_stats_df: DataFrame, player_injuries_df: DataFrame) -> DataFrame:
+
+    """
+    merges injury information into player_stats for the same week
+
+    Parameters:
+        player_stats_df (pd.DataFrame): nflverse player_stats dataset
+        player_injuries_df (pd.DataFrame): anflverse injuries dataset
+
+    Returns:
+        player_stats_df (pd.DataFrame): a new version of payer_stats with injury data
+
+     """
+
+    df = pd.merge(player_stats_df,
+                  player_injuries_df[['season', 'week', 'player_id', 'primary_injury', 'report_status', 'practice_status']],
                   left_on=['season', 'week', 'player_id'],
                   right_on=['season', 'week', 'player_id'],
                   how='left')
     df.primary_injury.fillna('None', inplace=True)
     df.report_status.fillna('None', inplace=True)
     df.practice_status.fillna('None', inplace=True)
-    sz_before = player_stats.shape[0]
+    sz_before = player_stats_df.shape[0]
     sz_after = df.shape[0]
     assert_and_alert(
         sz_before == sz_after,
@@ -117,49 +111,66 @@ def merge_injuries(player_stats: DataFrame, player_injuries: DataFrame) -> DataF
     return df
 
 
-def player_stats_fixes():
-    return list([
-        ('00-0027567', 'Steve Maneri', 'TE'),
-        ('00-0028543', 'Jeff Maehl', 'WR'),
-        ('00-0025569', 'Adam Hayward', 'LB'),
-        ('00-0029675', 'Trent Richardson', 'RB')])
+def transform_player_stats(player_stats_df: DataFrame) -> DataFrame:
+    """
+    main program for wrangling player_stats from nflverse,
+    cleanup some specific records
+    impute missing values from other redundant columns
+    fill some binary columns (0 or 1) with zeros
+    rename gsis_id to player_id for consistency with other data
+]
+    Parameters:
+        player_stats_df (pd.DataFrame): an offense or defense stats dataframe that we can use for feature selection
 
+    Returns:
+        player_stats_df (pd.DataFrame): a 'clean' version of payer_stats
 
-def transform_player_stats(df):
+     """
 
     # iterate over our list and update the position column for ones we've looked up
     logger.info(f"fix specific player_stats: {player_stats_fixes}..")
     for im in player_stats_fixes():
         gsis_id = im[0]
         position = im[2]
-        df.loc[(df.player_id == gsis_id) & (df['position'].isnull()), 'position'] = position
+        player_stats_df.loc[(player_stats_df.player_id == gsis_id) & (player_stats_df['position'].isnull()), 'position'] = position
 
     # Jus drop this record from 1999 with no player info
-    df = df.drop(df.loc[df['player_id'] == '00-0005532'].index)
+    player_stats_df = player_stats_df.drop(player_stats_df.loc[player_stats_df['player_id'] == '00-0005532'].index)
 
     # replace empty position_groups with position
     logger.info("replace empty position_groups with position info...")
-    df['position_group'] = df['position_group'].fillna(df['position'])
+    player_stats_df['position_group'] = player_stats_df['position_group'].fillna(player_stats_df['position'])
 
     logger.info("replace empty player_name with player_display_name info...")
-    df['player_name'] = df['player_name'].fillna(df['player_display_name'])
+    player_stats_df['player_name'] = player_stats_df['player_name'].fillna(player_stats_df['player_display_name'])
 
     logger.info(f"replace empty headshot_url with '{empty_headshot_url}'...")
-    df['headshot_url'] = df['headshot_url'].fillna(empty_headshot_url)
+    player_stats_df['headshot_url'] = player_stats_df['headshot_url'].fillna(empty_headshot_url)
 
     logger.info(f"fillna(0) for all binary columns...")
-    impute_columns(df, player_stats_impute_to_zero)
+    impute_columns(player_stats_df, player_stats_impute_to_zero)
 
-    df.rename(columns={
+    player_stats_df.rename(columns={
         'gsis_id': 'player_id',
         'recent_team': 'team'}, inplace=True)
 
-    check_keys(df)
-    return df
+    check_keys(player_stats_df)
+    return player_stats_df
 
 
-def transform_players(player_df):
+def transform_players(player_df: DataFrame) -> DataFrame:
+    """
+    main program for wrangling players from nflverse,
+    drop a few records missing the gsis_id key - they can't join to anything else
+    rename gsis_id to player_id for consistency with other data
 
+    Parameters:
+        player_df (pd.DataFrame): an offense or defense stats dataframe that we can use for feature selection
+
+    Returns:
+        player_df (pd.DataFrame): a 'clean' version of payer_stats
+
+     """
     logger.info("Process players dataset...")
 
     logger.info("drop players without gsis_ids - they won't link to player_stats")

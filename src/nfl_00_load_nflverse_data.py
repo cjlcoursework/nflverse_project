@@ -1,3 +1,5 @@
+from typing import Dict
+
 import logging
 import os.path
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -12,6 +14,16 @@ logger = configure_logging("pbp_logger")
 
 
 def validate_schema(local_file_path, schema_file, silent=True):
+    """
+    validate a local file against a schema file
+    Parameters:
+        local_file_path (str): the local file to validate
+        schema_file (str): the schema file to validate against
+        silent (bool): if True, don't alert
+    Returns:
+        None
+    """
+    logger.info(f"Validating schema:  {schema_file} --> {local_file_path}")
     schema_df = pd.read_csv(schema_file, header=0)
 
     df = pd.read_csv(local_file_path, low_memory=False)
@@ -24,7 +36,9 @@ def validate_schema(local_file_path, schema_file, silent=True):
 
 
 def read_source(url, output_dir, local_file_base, schema_file_path=None, silent=True):
-    # Make the HTTP request to get the Parquet file content
+    """
+    Download the file from the url and save it locally under `file_name`
+    """
 
     base_file_name = os.path.basename(url)
 
@@ -59,6 +73,22 @@ def read_source(url, output_dir, local_file_base, schema_file_path=None, silent=
 
 
 class URLReader:
+    """
+    Class for reading and downloading URLs from a configuration service.
+
+    Args:
+        start_year (int): The start year for gathering URLs.
+        last_year (int): The last year for gathering URLs.
+        file_type (str, optional): The type of files to download (default is 'csv').
+        max_workers (int, optional): The maximum number of concurrent workers for downloading (default is 10).
+
+    Attributes:
+        output_directory (str): The directory where downloaded files will be stored.
+        schema_directory (str): The directory where schema files are located.
+        file_type (str): The type of files to download.
+        years (numpy.ndarray): An array containing the years to gather URLs for.
+        max_workers (int): The maximum number of concurrent workers for downloading.
+    """
 
     def __init__(self, start_year: int, last_year: int, file_type='csv', max_workers=10):
         self.output_directory = get_config('output_directory')
@@ -67,7 +97,15 @@ class URLReader:
         self.years = np.arange(start_year, last_year + 1)
         self.max_workers = max_workers
 
-    def get_urls(self):
+    def get_urls(self) -> Dict:
+
+        """
+        gather urls from the configuration service (config.py)
+
+        Returns:
+            a dict of all urls
+         """
+
         advstats_stat_types = get_config('advstats_stat_types')
         ng_stat_types = get_config('ng_stats_types')
 
@@ -98,6 +136,10 @@ class URLReader:
         return urls
 
     def download(self):
+        """
+        get all urls from get_urls() and create an executor thread pool
+        to download them to a pre-configured location on disk
+         """
         urls = self.get_urls()
         test_only = False
 
@@ -122,13 +164,18 @@ class URLReader:
                 except Exception as e:
                     logger.info(f'Error occurred: {str(e)}')
 
-
         return urls
 
 
 def read_nflverse_datasets():
+    """
+    main program for downloading data from nflverse to a local drive
+    most of this logic is in the URLReader() class which we initialize here
+     """
+
     logger.setLevel(logging.DEBUG)
-    reader = URLReader(start_year=2016, last_year=2022, file_type=get_config("file_type"))
+    reader = URLReader(start_year=get_config("start_year"), last_year=get_config("last_year"), file_type=get_config("file_type"))
+
     logger.info("begin downloads ...")
     urls = reader.download()
     logger.info("downloads complete ...")

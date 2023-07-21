@@ -150,6 +150,7 @@ TIER ONE - initial cleanp
 #         conform_binary_column(df, column_name)
 
 
+
 def impute_binary_columns(df):
     df.loc[:, binary_columns] = df.loc[:, binary_columns].fillna(0)
 

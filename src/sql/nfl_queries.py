@@ -8,17 +8,23 @@ from src.util.database_loader import DatabaseLoader
 logger = configs.configure_logging("pbp_logger")
 logger.setLevel(logging.INFO)
 
+"""
+SQL to query data from the nfl database for the team-week win/loss experiment
+
+"""
+
+
 db = DatabaseLoader(get_config('connection_string'))
-DEBUG = False
-COMMIT_TO_DATABASE = True
-SCHEMA = 'controls'
 
 
 def build_all_weeks_template() -> DataFrame:
     logger.info("Build a 'control' dataset with all seasons and weeks...")
     return db.query_to_df(
         """
-        select posteam as team, season, week from controls.play_actions group by posteam, season, week order by posteam, season, week
+        select posteam as team, season, week 
+        from controls.play_actions 
+        group by posteam, season, week 
+        order by posteam, season, week
         """
     )
 
@@ -78,12 +84,12 @@ def build_play_actions_dataset() -> DataFrame:
         ),
         next_starting_scores AS (
                  -- intermediate step:
-                 -- get the score from the next down into the current record
+                 -- get the score from the next row down into the current record
                  -- assign a unique row_id so we can validate it only occurs once in the final dataset
                  SELECT *,
                         ROW_NUMBER() OVER (ORDER BY (SELECT NULL))                             AS row_id,
                         LEAD(posteam_score)
-                        OVER (PARTITION BY season, week, posteam, drive ORDER BY play_counter) AS next_starting_score
+                            OVER (PARTITION BY season, week, posteam, drive ORDER BY play_counter) AS next_starting_score
                  FROM play_actions
                  WHERE rn = 1
         )
@@ -175,8 +181,6 @@ def build_game_info_dataset() -> DataFrame:
         game_df.spread > 0, 'win',
         np.where(game_df.spread < 0, 'loss', 'tie'))
 
-    # game_df.loc[(game_df.season == 2017) & (game_df.week == 6) & (game_df.team.isin(['DEN', 'NYG']))]
-
     # fail if there are any group counts > 1
     double_counts = game_df.loc[(game_df['count'].astype(int) > 1)].shape[0]
     assert double_counts == 0
@@ -215,7 +219,6 @@ def build_ngs_air_stats() -> DataFrame:
                max_air_distance,
             row_number() over (partition by season, week, team_abbr, player_position order by pass_yards desc) as rn
         from controls.nextgen_pass
-    --    where season=2016 and week=1 and team_abbr = 'CHI'
         order by team_abbr, player_position, season desc, week )
         select * from base where rn = 1 and week > 0
     """)
@@ -266,11 +269,9 @@ def build_pbp_events_dataset() -> DataFrame:
         SELECT
             season, week, team, game_id,
             SUM(CASE WHEN event = 'fumble' THEN 1 else 0 END) AS fumble,
-         --   SUM(CASE WHEN event = 'own_kickoff_recovery' THEN 1 else 0 END) AS own_kickoff_recovery,
             SUM(CASE WHEN event = 'safety' THEN 1 else 0 END) AS safety,
             SUM(CASE WHEN event = 'tackle' THEN 1 else 0 END) AS tackle,
             SUM(CASE WHEN event = 'qb_hit' THEN 1 else 0  END) AS qb_hit,
-         --   SUM(CASE WHEN event = 'touchdown' THEN 1  else 0 END) AS touchdown,
             SUM(CASE WHEN event = 'interception' THEN 1 else 0 END) AS interception,
             SUM(CASE WHEN event = 'sack' THEN 1 else 0 END) AS sack
         FROM defensive_events where week > 0

@@ -5,6 +5,8 @@ import pandas as pd
 configurations = {
     'project_name': "nfl",
     'file_type': "parquet",
+    'start_year': 2016,
+    'last_year': 2022,
 
     'action_week_prep':  'tmp_weekly_play_actions',
     'offense_week_prep': 'tmp_weekly_offense',

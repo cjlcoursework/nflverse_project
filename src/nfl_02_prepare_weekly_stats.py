@@ -13,34 +13,48 @@ logger = configs.configure_logging("pbp_logger")
 logger.setLevel(logging.INFO)
 
 db = DatabaseLoader(get_config('connection_string'))
-DEBUG = False
 COMMIT_TO_DATABASE = True
 SCHEMA = 'controls'
 
 
-def calc_coverage(title: str, df: DataFrame):
+def show_coverage(title: str, df: DataFrame):
+    """
+    Show the coverage of the data in the dataframe.
+    """
     first = df.season.min()
     last = df.season.max()
     first_wk = df.week.min()
     last_wk = df.week.max()
     seasons = df.season.nunique()
-    print(
+    logger.debug(
         f"Shape of {title:30}:  {df.shape},\t Contains {seasons} seasons, starting with {first} and ending in {last} min week: {first_wk}, max week : {last_wk}")
 
 
-def check_for_merge_columns(merged):
+def check_for_merge_columns(merged: DataFrame):
+    """
+    Check for columns that were duplicated during the merge process.
+    """
     overlaps = 0
     for col in merged.columns:
         if str(col).endswith("_y") or str(col).endswith("_x") or str(col) == "rn":
             print(col)
             overlaps += 1
 
-    assert overlaps == 0
-    print("ok")
+    assert overlaps == 0, f"found {overlaps} columns that were duplicated during the merge process"
 
 
 def merge_offensive_stats(game_df: DataFrame, possession_stats: DataFrame, ngs_air_power: DataFrame,
                           ngs_ground_power: DataFrame) -> DataFrame:
+    """
+    Merge the offensive stats with the play-by-play events and game info.
+    Parameters:
+        game_df (DataFrame): The game info data.
+        possession_stats (DataFrame): The offensive stats data.
+        ngs_air_power (DataFrame): The ngs_air_power data.
+        ngs_ground_power (DataFrame): The ngs_ground_power data.
+    Returns:
+        possession_stats (DataFrame): The offensive stats data with the play-by-play events and game info merged in.
+    """
     logger.info("merge offense events info into a single offense stats dataset...")
 
     starting_shape = possession_stats.shape
@@ -62,6 +76,16 @@ def merge_offensive_stats(game_df: DataFrame, possession_stats: DataFrame, ngs_a
 
 
 def merge_defensive_stats(game_df: DataFrame, pbp_events: DataFrame, defense_stats: DataFrame) -> DataFrame:
+    """
+    Merge the defensive stats with the play-by-play events and game info.
+    Parameters:
+        game_df (DataFrame): The game info data.
+        pbp_events (DataFrame): The play-by-play events data.
+        defense_stats (DataFrame): The defensive stats data.
+
+    Returns:
+        defense_stats (DataFrame): The defensive stats data with the play-by-play events and game info merged in.
+    """
     logger.info("merge defense events info into a single defense stats dataset...")
 
     starting_shape = defense_stats.shape
@@ -82,6 +106,16 @@ def merge_defensive_stats(game_df: DataFrame, pbp_events: DataFrame, defense_sta
 
 
 def store_weekly_datasets(play_actions_df: DataFrame, offense_stats: DataFrame, defense_stats: DataFrame, store_to_db: bool):
+    """
+    Transform and load the play-by-play data into a fact table and a few dimension tables.
+    Parameters:
+        play_actions_df (DataFrame): The play-by-play data.
+        offense_stats (DataFrame): The offensive stats data.
+        store_to_db (bool): Whether to store the data to the database or not.
+    Returns:
+        None - data is stored to the database.
+
+    """
     logger.info("save play action and merged offense and defense stats ...")
     action_table_name = get_config('action_week_prep')
     offense_table_name = get_config('offense_week_prep')
@@ -93,6 +127,10 @@ def store_weekly_datasets(play_actions_df: DataFrame, offense_stats: DataFrame, 
 
 
 def build_weekly_datasets():
+    """ Load the player stats and injuries data and transform it into a fact table and a few dimension tables.
+    Returns:
+        datasets (dict): The same dictionary of dataframes, with the stats and injuries data added.
+    """
     all_team_weeks = build_all_weeks_template()
     play_actions_df = build_play_actions_dataset()
     game_df = build_game_info_dataset()
@@ -110,11 +148,11 @@ def build_weekly_datasets():
     ngs_air_power = backfill_missing_metrics(ngs_air_power, all_team_weeks, 'ngs_air_power')
 
     # calc_coverage("ngs_air_power  ", ngs_air_power)
-    # calc_coverage("ngs_ground_power ", ngs_ground_power)
-    # calc_coverage("pbp_events  ", pbp_events)
-    # calc_coverage("defense_stats  ", defense_stats)
-    # calc_coverage("possession_stats  ", possession_stats)
-    # calc_coverage("game info  ", game_df)
+    show_coverage("ngs_ground_power ", ngs_ground_power)
+    show_coverage("pbp_events  ", pbp_events)
+    show_coverage("defense_stats  ", defense_stats)
+    show_coverage("possession_stats  ", possession_stats)
+    show_coverage("game info  ", game_df)
 
     all_offense_stats = merge_offensive_stats(game_df, possession_stats, ngs_air_power, ngs_ground_power)
     all_defense_stats = merge_defensive_stats(game_df, pbp_events, defense_stats)
@@ -122,9 +160,18 @@ def build_weekly_datasets():
 
 
 def prepare_team_week_dataset(store_to_db=False):
+    """
+    Transform and load the play-by-play data into a fact table and a few dimension tables.
+    Parameters:
+        store_to_db (bool): Whether to store the data to the database or not.
+
+    """
     play_actions_df, all_offense_stats, all_defense_stats = build_weekly_datasets()
     store_weekly_datasets(play_actions_df, all_offense_stats, all_defense_stats, store_to_db)
 
 
 if __name__ == '__main__':
+    """
+    Just for sanity testing the code in this file.
+    """
     prepare_team_week_dataset(COMMIT_TO_DATABASE)

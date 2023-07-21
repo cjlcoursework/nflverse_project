@@ -1,5 +1,7 @@
 import numpy as np
 import os
+from pandas import DataFrame
+from typing import List, Dict
 
 from src import *
 from src.nfl.inline_validation import perform_inline_play_action_tests
@@ -11,6 +13,9 @@ logger.setLevel(logging.INFO)
 
 
 def drop_extras(df: pd.DataFrame):
+    """
+    Drop the extra columns that were created during the merge process.
+    """
     drops = ['team']
     for col in df.columns.values:
         if str(col).endswith("_y") or str(col).endswith("_x"):
@@ -19,11 +24,25 @@ def drop_extras(df: pd.DataFrame):
         df.drop(columns=drops, inplace=True)
 
 
-def merge_powers(action_df, powers_df, left_on, renames=None, msg='play_counter'):
+def merge_powers(action_df: DataFrame, powers_df: DataFrame, left_on: List[str], renames: Dict =None, msg: str ='play_counter') -> DataFrame:
+    """
+    Merge the offensive stats with the play-by-play events and game info.
+    Parameters:
+        action_df (DataFrame): The game info data.
+        powers_df (DataFrame): The offensive stats data.
+        left_on (list): The columns to merge on.
+        renames (dict): The columns to rename.
+        msg (str): The message to display in the log.
+
+        Returns:
+        _df (DataFrame): The offensive stats data with the play-by-play events and game info merged in.
+
+    """
     expected_shape = action_df.shape
     _df = pd.merge(action_df, powers_df, left_on=left_on, right_on=['season', 'week', 'team']).drop_duplicates()
     drop_extras(_df)
     _df.rename(columns=renames, inplace=True)
+
     perform_inline_play_action_tests(_df, msg=msg)
     assert_and_alert(expected_shape[0] == _df.shape[0],
                      msg=f"merge of actions to offense power "
@@ -31,7 +50,15 @@ def merge_powers(action_df, powers_df, left_on, renames=None, msg='play_counter'
     return _df
 
 
-def load_file(directory, file):
+def load_file(directory: str, file: str) -> DataFrame:
+    """
+    Load a file from the data directory.
+    Parameters:
+        directory (str): The directory to load the file from.
+        file (str): The name of the file to load.
+    Returns:
+        df (DataFrame): The loaded data.
+    """
     logger.info(f"Reading from {file}")
 
     if not os.path.exists(directory):
@@ -43,6 +70,11 @@ def load_file(directory, file):
 
 
 def load_and_merge_weekly_features():
+    """
+    Load the weekly features and merge them into a single game dataset.
+    Returns:
+        df (DataFrame): The merged stats data.
+    """
     logger.info("loading weekly features into a single game dataset...")
     directory = get_config('data_directory')
 
@@ -75,7 +107,18 @@ def load_and_merge_weekly_features():
     return df    
 
 
-def aggregate_game_stats(df):
+def aggregate_game_stats(df: DataFrame):
+    """
+    Aggregate the weekly stats into a single game dataset
+    that has the stats for both the offense and defense for each team.
+
+    Parameters:
+        df (DataFrame): The merged weekly stats data.
+    Returns:
+        games_df (DataFrame): The game stats data.
+
+    """
+
     logger.info("aggregate game dataset weekly stats by season, week, team...")
 
     # add a point spread field
@@ -138,6 +181,9 @@ def aggregate_game_stats(df):
 
 
 def merge_team_week_features():
+    """
+    Merge the weekly features into a single game dataset.
+    """
     df = load_and_merge_weekly_features()
     game_df = aggregate_game_stats(df)
 

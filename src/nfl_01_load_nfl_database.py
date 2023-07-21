@@ -17,12 +17,22 @@ logger.setLevel(logging.INFO)
 
 
 def load_pbp():
+    """Load the play-by-play data and transform it into a fact table and a few dimension tables."""
     pbp = load_files(data_subdir='pbp')
     datasets = transform_pbp(pbp)
     return datasets
 
 
-def load_participation(datasets):
+def load_participation(datasets: dict):
+    """
+    Load the participation data and transform it into a fact table and a few dimension tables.
+
+    Parameters:
+        datasets (dict): A dictionary of dataframes that have already been loaded and transformed.
+
+    Returns:
+        datasets (dict): The same dictionary of dataframes, with the participation data added.
+    """
     pbp_participation_df = load_files('pbp-participation')
 
     player_df, player_events_df = transform_pbp_participation(
@@ -37,6 +47,15 @@ def load_participation(datasets):
 
 
 def load_stats(datasets):
+    """
+    Load the player stats and injuries data and transform it into a fact table and a few dimension tables.
+
+    Parameters:
+        datasets (dict): A dictionary of dataframes that have already been loaded and transformed.
+
+    Returns:
+        datasets (dict): The same dictionary of dataframes, with the stats and injuries data added.
+    """
     injuries_df = load_files('injuries')
     injuries_df = prep_player_injuries(injuries_df)
 
@@ -46,7 +65,7 @@ def load_stats(datasets):
 
     stats_df = load_files('player-stats')
     stats_df = transform_player_stats(stats_df)
-    stats_df = merge_injuries(player_stats=stats_df, player_injuries=injuries_df)
+    stats_df = merge_injuries(player_stats_df=stats_df, player_injuries_df=injuries_df)
 
     players_df = load_files('players')
     players_df = transform_players(players_df)
@@ -59,6 +78,15 @@ def load_stats(datasets):
 
 
 def load_advanced_stats(datasets):
+    """
+    Load the advanced stats data and transform it into a fact table and a few dimension tables.
+
+    Parameters:
+        datasets (dict): A dictionary of dataframes that have already been loaded and transformed.
+
+    Returns:
+        datasets (dict): The same dictionary of dataframes, with the advanced stats data added.
+    """
     advstats_def_df = load_files('advstats-season-def')
     advstats_pass_df = load_files('advstats-season-pass')
     advstats_rec_df = load_files('advstats-season-rec')
@@ -79,11 +107,18 @@ def load_advanced_stats(datasets):
 
 
 def load_all_datasets_to_db(data: dict):
+    """Load all the datasets to the database.
+    Parameters:
+        data (dict): A dictionary of dataframes that have already been loaded and transformed.
+    """
     data['schema'] = database_schema
     load_dims_to_db(data)
 
 
 def create_nfl_database():
+    """Load all the datasets and transform them into a fact table and a few dimension tables.
+    If LOAD_TO_DB is True, load the data to the database.
+    """
     datasets = load_pbp()
     datasets = load_participation(datasets)
     datasets = load_stats(datasets)
@@ -95,4 +130,3 @@ def create_nfl_database():
 
 if __name__ == '__main__':
     create_nfl_database()
-

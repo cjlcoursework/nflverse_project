@@ -8,6 +8,9 @@ from sqlalchemy.engine import Connection, Engine
 
 
 class DatabaseLoader:
+    """
+    This class is used to load data into a PostgreSQL database.
+    """
     connection_string: str = None
     conn: Connection = None
     engine: Engine = None
@@ -21,7 +24,9 @@ class DatabaseLoader:
             return super().default(o)
 
     def __init__(self, connection_string_env_url=None):
-
+        """
+        Initialize the DatabaseLoader class with a connection string.
+        """
         url_value = os.getenv(connection_string_env_url)
         if url_value is None:
             url_value = connection_string_env_url
@@ -29,6 +34,9 @@ class DatabaseLoader:
         self.load_stats = []
 
     def connect_sql(self, force_reconnect: bool = False):
+        """
+        Singleton Connection to the PostgreSQL database.
+        """
         if self.conn is not None:
             if not force_reconnect:
                 if self.conn.in_transaction():
@@ -42,11 +50,17 @@ class DatabaseLoader:
         return self.conn
 
     def read_table(self, table_name: str, schema: str = 'public') -> pd.DataFrame:
+        """
+        Read a table from the PostgreSQL database into a Pandas DataFrame.
+        """
         self.connect_sql()
         df = pd.read_sql(text(f"select * from {schema}.{table_name}"), self.conn)
         return df
 
     def query_to_df(self, query: str):
+        """
+        Utility function to read a table from the PostgreSQL database into a Pandas DataFrame.
+        """
         self.connect_sql()
         result = self.conn.execute(text(query))
         return pd.DataFrame(result.fetchall())
@@ -65,6 +79,18 @@ class DatabaseLoader:
                    schema: str = "public",
                    handle_exists='replace',
                    source='not-provided') -> None:
+        """
+        Load a Pandas DataFrame into a PostgreSQL table.
+        Parameters:
+            df: Pandas DataFrame to load into the PostgreSQL table.
+            table_name: Name of the PostgreSQL table to load the data into.
+            schema: Name of the PostgreSQL schema to load the data into.
+            handle_exists: How to handle existing data in the table. Options are 'replace', 'append', and 'fail'.
+            source: Source of the data being loaded into the table.
+
+            Returns:
+                 None
+        """
 
         df['ops_load_timestamp'] = datetime.now()
 
