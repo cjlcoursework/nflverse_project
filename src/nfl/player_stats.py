@@ -60,6 +60,42 @@ player_stats_impute_to_zero = [
 droppable_players = ["Arthur Williams", "Frank Stephens"]
 
 
+def check_merge(merged_df, stats_df):
+    logger.info("Validate the players + player_stats merge...")
+
+    n = len(merged_df)
+    sn = len(stats_df)
+    total_stats = len(stats_df)
+    stats_without_players = (merged_df['_merge'] == 'left_only').sum() / n
+    player_without_stats = (merged_df['_merge'] == 'right_only').sum() / n
+    inner_joins = (merged_df['_merge'] == 'both').sum()
+    inner_join_percentage = inner_joins / n
+    stats_completeness = inner_joins / total_stats
+
+    logger.info(f"The stats dataset has {sn} records")
+    logger.info(f"The merged dataset has {n} records")
+    logger.info(f"percent of stats_without_players: {stats_without_players}")
+    logger.info(f"percent of players_without_stats - this is common: {player_without_stats}")
+    logger.info(f"percent of matched players and stats : {inner_join_percentage}")
+    logger.info(f"percent of stats that were consumed in the join: {stats_completeness}")
+
+    assert_and_alert(assertion=stats_completeness > .98,
+                     msg=f"expected at least 98% of player_stats to be linked to players: percentage={stats_completeness}")
+    assert_and_alert(assertion=stats_without_players < .01,
+                     msg=f"stats_without_players should be zero: percentage={stats_without_players}")
+
+
+def check_keys(df):
+    assert_not_null(df, 'season')
+    assert_not_null(df, 'week')
+    assert_not_null(df, 'player_id')
+    assert_not_null(df, 'position')
+
+    assert_and_alert(
+        assertion=(df.isna().sum().sum() == 0),
+        msg="Found unexpected Nulls in player_stats ")
+
+
 #
 #  player_stats
 #
@@ -139,40 +175,6 @@ def transform_players(player_df):
     return player_df
 
 
-def check_merge(merged_df, stats_df):
-    logger.info("Validate the players + player_stats merge...")
-
-    n = len(merged_df)
-    sn = len(stats_df)
-    total_stats = len(stats_df)
-    stats_without_players = (merged_df['_merge'] == 'left_only').sum() / n
-    player_without_stats = (merged_df['_merge'] == 'right_only').sum() / n
-    inner_joins = (merged_df['_merge'] == 'both').sum()
-    inner_join_percentage = inner_joins / n
-    stats_completeness = inner_joins / total_stats
-
-    logger.info(f"The stats dataset has {sn} records")
-    logger.info(f"The merged dataset has {n} records")
-    logger.info(f"percent of stats_without_players: {stats_without_players}")
-    logger.info(f"percent of players_without_stats - this is common: {player_without_stats}")
-    logger.info(f"percent of matched players and stats : {inner_join_percentage}")
-    logger.info(f"percent of stats that were consumed in the join: {stats_completeness}")
-
-    assert_and_alert(assertion=stats_completeness > .98,
-                     msg=f"expected at least 98% of player_stats to be linked to players: percentage={stats_completeness}")
-    assert_and_alert(assertion=stats_without_players < .01,
-                     msg=f"stats_without_players should be zero: percentage={stats_without_players}")
-
-
-def check_keys(df):
-    assert_not_null(df, 'season')
-    assert_not_null(df, 'week')
-    assert_not_null(df, 'player_id')
-    assert_not_null(df, 'position')
-
-    assert_and_alert(
-        assertion=(df.isna().sum().sum() == 0),
-        msg="Found unexpected Nulls in player_stats ")
 
 
 

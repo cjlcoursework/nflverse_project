@@ -11,22 +11,57 @@ warnings.filterwarnings('ignore')
 logger = configure_logging("pbp_logger")
 
 
-def check_keys(df):
+def check_keys(injuries_df: DataFrame):
+    """
+    Conform any keys in this function.
+    In this case we are only renaming the gsis_id column to player_id which is consistent with other data
+    Parameters:
+        injuries_df (pd.DataFrame): an offense or defense stats dataframe that we can use for feature selection
+
+    Returns:
+        None - we'll alert if we find any problems
+
+     """
+
     logger.info("""Checking for nulls...)""")
-    assert_not_null(df, 'season')
-    assert_not_null(df, 'week')
-    assert_not_null(df, 'player_id')
-    assert_not_null(df, 'team')
-    assert_not_null(df, 'position')
-    assert_not_null(df, 'report_status')
+    assert_not_null(injuries_df, 'season')
+    assert_not_null(injuries_df, 'week')
+    assert_not_null(injuries_df, 'player_id')
+    assert_not_null(injuries_df, 'team')
+    assert_not_null(injuries_df, 'position')
+    assert_not_null(injuries_df, 'report_status')
 
 
-def conform_names(injuries_df: DataFrame):
+def conform_names(injuries_df: DataFrame) -> DataFrame:
+    """
+    Conform any keys in this function.
+    In this case we are only renaming the gsis_id column to player_id which is consistent with other data
+    Parameters:
+        injuries_df (pd.DataFrame): an offense or defense stats dataframe that we can use for feature selection
+
+    Returns:
+        injuries_df (pd.DataFrame): a cleaned version of itself
+
+     """
+
     logger.info("""Conforming names (e.g. gsis_id -> player_id)""")
     return injuries_df.rename(columns={'gsis_id': 'player_id'})
 
 
-def transformations(injuries_df):
+def transformations(injuries_df: DataFrame) -> DataFrame:
+
+    """
+    Add a report_status column that is a more consistent version of a players injury
+    This is just a series of if else logic that we use to determine the best report_status value
+
+    Parameters:
+        injuries_df (pd.DataFrame): an offense or defense stats dataframe that we can use for feature selection
+
+    Returns:
+        injuries_df (pd.DataFrame): a cleaned version of itself
+
+     """
+
     logger.info("""Merge sparse injury columns""")
     # merge sparse injury report fields
     injuries_df['primary_injury'] = injuries_df['report_primary_injury'].fillna(injuries_df['practice_primary_injury'])
@@ -53,15 +88,30 @@ def transformations(injuries_df):
     return injuries_df
 
 
-def prep_player_injuries(df: DataFrame):
+def prep_player_injuries(injuries_df: DataFrame) -> DataFrame:
+
+    """
+    Here we start with the injuries dataset from nflverse we
+    - conform any columns we'll use to join later
+    - validate that there are no nulls in key columns
+    - re-work some of the status data into a more consistent and complete 'report_status' column
+
+    Parameters:
+        injuries_df (pd.DataFrame): an offense or defense stats dataframe that we can use for feature selection
+
+    Returns:
+        injuries_df (pd.DataFrame): a cleaned version of itself
+
+     """
+
     logger.info("""Prep injury data...""")
 
-    df = conform_names(df)
-    df = transformations(df)
+    injuries_df = conform_names(injuries_df)
+    injuries_df = transformations(injuries_df)
 
     logger.info("check that all positions are correct...")
-    validate_positions(df, silent=True)
-    return df
+    validate_positions(injuries_df, silent=True)
+    return injuries_df
 
 
 def test_player_stats_job():

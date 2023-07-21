@@ -4,6 +4,11 @@ from src.util.utils import assert_and_alert
 
 logger = configure_logging("pbp_logger")
 
+"""
+This is a sample inline test with a single test
+  for example, in this single test we validate that the sum of all yards gained in the '2016_01_BUF_BAL' game equals 468
+"""
+
 tests = {
     '2016_01_BUF_BAL': {'yards_gained': 468}
 }
