@@ -1,7 +1,7 @@
 import numpy as np
 import os
+from pandas import DataFrame
 from sklearn.preprocessing import MinMaxScaler
-
 
 from src import *
 
@@ -15,111 +15,148 @@ def summarize_indicators(df, feature_names, threshold):
         .sort_values(by='percentage', ascending=False).pivot_table(columns=['Feature'])
 
 
-def prepare_indicators(df, threshold):
-    feature_column_name, metric_column_name = df.columns[:2]
+def prepare_indicators(feature_weights_df: DataFrame, threshold: float) -> DataFrame:
 
-    indicators = df.loc[(df[metric_column_name] > threshold)].copy()
+    """
+    We receive a two column mapping of features and percentages (weights)
+    we drop the summary data rows whose values are less than the threshold
+    and recompute the percentage values so that they sum to one.
+
+    Parameters:
+        feature_weights_df (pd.DataFrame): a feature importance or correlation dataframe with a feature label and a 'weight''
+        threshold (float): this is just a label that we can use to log which metrics_df dataset we are working on
+
+    Returns:
+       df (pd.DataFrame): a recomputed version of the feature_weights_df
+
+    """
+
+    # get only the first two columns
+    feature_column_name, metric_column_name = feature_weights_df.columns[:2]
+
+    # drop percentages under the threshold
+    indicators = feature_weights_df.loc[(feature_weights_df[metric_column_name] > threshold)].copy()
+
+    # recompute the averages
     indicators['percentage'] = indicators[metric_column_name] / indicators[metric_column_name].sum()
 
+    # sort and return
     return indicators.sort_values(by='percentage', ascending=False).pivot_table(columns=[feature_column_name])
 
 
-def calculate_power_score(data_df, indicators, column_name):
+def calculate_power_score(data_df: DataFrame, feature_map_df: DataFrame, power_column: str):
+
+    """
+    Here we start with a defense or offense stats dataframe (df),
+    and the recomputed output of feature selection,
+    and we add a power_column that contains the weighted averages from all the feature
+
+    again, the column names in the summary_data dataset correspond to real columns in the df dataset,
+    so we are using the feature_map_df weights to calculate on the column names in data_df
+
+    Parameters:
+        data_df (pd.DataFrame): an offense or defense stats dataframe that we can use for feature selection
+        feature_map_df (pd.DataFrame): our new recomputed feature_map with a percentage for each feature
+        power_column (str): this is the column name we are going to put our aggregated score into
+                            - it will be either defense_power or offense_power
+
+    Returns:
+       None - we add the power score inplace.
+
+     """
+
+    # first, get the weights for all columns in df that are also in features_map_df
+    # add a v_<column> column that contains the column value time the feature_map_df weight
     weighted_columns = []
-    for col in indicators.columns:
-        # play_df[f"w_{col}"] = offense_indicators.iloc[0][col]
+    for col in feature_map_df.columns:
         w = f"v_{col}"
         weighted_columns.append(w)
-        data_df[w] = data_df[col] * indicators.iloc[0][col]
 
-    data_df[column_name] = data_df[weighted_columns].sum(axis=1)
+        # add a temp weight column to the df todo: a little hacky to add weight columns that we'll then delete
+        data_df[w] = data_df[col] * feature_map_df.iloc[0][col]
+
+    # next add the new power_column to contains the sum of all v_<column> weights columns
+    data_df[power_column] = data_df[weighted_columns].sum(axis=1)
+
+    # drop the temp v_<column> weight columns
     data_df.drop(columns=weighted_columns, inplace=True)
 
 
-def concat_power_score(df, summary_data, threshold, power_column) -> (
+def concat_power_score(df: DataFrame, summary_data: DataFrame, threshold: float, power_column: str) -> (
         pd.DataFrame, pd.DataFrame):
-    # expect the first two columns to contain a feature label and a metric
+    """
+    Here we start with a defense or offense stats dataframe (df),
+    and the output of feature selection (summary_data) like the importance output from xgboost
+
+    The column names in the summary_data dataset correspond to real columns in the df dataset
+
+    we drop the summary data rows whose values are less than the threshold and recompute the values so they sum to one.
+    we'll then use that feature mapping to find the same feature columns in df and score them according to their value
+    weighted by the summary_data percentage that we just calculated.
+
+    Parameters:
+        df (pd.DataFrame): an offense or defense stats dataframe that we can use for feature selection
+        summary_data (pd.DataFrame): a feature importance or correlation dataframe with a feature label and a 'weight''
+        threshold (float): this is just a label that we can use to log which metrics_df dataset we are working on
+        power_column (str): this is just a label that we can use to log which metrics_df dataset we are working on
+
+    Returns:
+       df (pd.DataFrame): we return the new backfilled replacement for mertics_df
+
+    Example:
+        Lets say that we have a summary data column that looks like this:
+            sacks      50%
+            qb_hits    40%
+            tackles    10%
+         and our threshold is 11%, so we drop the 'tackles' row and re-compute the percentage
+         to look something like this:
+            sacks      55%
+            qb_hits    45%
+
+        We then look up a row in the df dataset - it has the following data
+             sacks      25
+             qb_hits    39
+
+        we'll multiply the actual values from each df row with their weights from summary_data:
+
+            new_df[power_column] -> sacks * 55% + qb_hits * 45%
+            =  25 * 55% + 39 * 45%
+            =  13.75 + 17.55
+            =  31.3
+     """
 
     logger.info("get percentage contribution of offensive and defensive features")
-    indicator_percentages = prepare_indicators(
-        df=summary_data,
+
+    # drop weights under the threshold and recompute the probabilities
+    feature_map_df = prepare_indicators(
+        feature_weights_df=summary_data,
         threshold=threshold)
 
     logger.info("calculate weighted average of offensive and defensive features")
-    calculate_power_score(df, indicator_percentages, power_column)
+    calculate_power_score(df, feature_map_df, power_column)
 
     return df
 
 
-def build_all_game_weeks(df: pd.DataFrame, team_column) -> pd.DataFrame:
-    # there are some missing weeks in the power data.
-    # This is probably ok for this application but let's try to backfill some of the data
-    # Construct the skeleton as a list of dictionaries
-    unique_teams = np.sort(df[team_column].unique())
-    unique_seasons = np.sort(df['season'].unique())
-    # max_week = df['week'].max()
-    # max_weeks = list(range(1, max_week+1))
-
-    skeleton = []
-    for team in unique_teams:
-        for season in unique_seasons:
-            max_week = df.loc[df.season == season, 'week'].max()
-            max_weeks = list(range(1, max_week + 1))
-            for week in max_weeks:
-                skeleton.append(dict(team=team, season=season, week=week))
-
-    # Create the DataFrame from the skeleton
-    all_weeks = pd.DataFrame(skeleton)
-    return all_weeks
+def backfill_missing_metrics(metrics_df: DataFrame, all_weeks: DataFrame, label: str = 'metrics') -> DataFrame:
+    """
+     This function is applied to any stats dataframes, such as pbp_events,  defense_stats, ngs_air_power
+     We will join all of these together on season, week and team
+     If there are missing weeks, the stats from the next closest week are valid, and we want to backfill from those rows
+     We'll create rows with null values in metrics_df by merging with the all_weeks dataset
+     We can then use backfill and foward fill to fill those rows with missing vaues
 
 
-def backfill_missing_weeks(power_df, all_weeks, target_column) -> pd.DataFrame:
-    df = power_df[['team', 'season', 'week', target_column]]
-    df.sort_values(['team', 'season', 'week'], inplace=True)
-    # Create a reference DataFrame with all possible combinations of team, season, and week
+    Parameters:
+        metrics_df (pd.DataFrame): an offense or defense stats dataframe that we can use for feature selection
+        all_weeks (pd.DataFrame): a skeleton dataset containing all possible season, week, team
+        label (str): this is just a label that we can use to log which metrics_df dataset we are working on
 
-    # Merge the reference DataFrame with the original DataFrame to insert missing rows
-    df = pd.merge(all_weeks, df, on=['team', 'season', 'week'], how='left')
+    Returns:
+       df (pd.DataFrame): we return the new backfilled replacement for mertics_df
 
-    # Sort the DataFrame again after merging
-    df.sort_values(['team', 'season', 'week'], inplace=True)
+     """
 
-    # Use backward fill to propagate values from the next available week
-    df[target_column] = df.groupby(['team', 'season'])[target_column].bfill()
-
-    # Use forward fill to propagate values from the previous available week
-    df[target_column] = df.groupby(['team', 'season'])[target_column].ffill()
-
-    # Reset the index if needed
-    df.reset_index(drop=True, inplace=True)
-
-    return df.drop_duplicates()
-
-
-def backfill_missing_stats(power_df, all_weeks, target_column) -> pd.DataFrame:
-    df = power_df[['team', 'season', 'week', target_column]]
-    df.sort_values(['team', 'season', 'week'], inplace=True)
-    # Create a reference DataFrame with all possible combinations of team, season, and week
-
-    # Merge the reference DataFrame with the original DataFrame to insert missing rows
-    df = pd.merge(all_weeks, df, on=['team', 'season', 'week'], how='left')
-
-    # Sort the DataFrame again after merging
-    df.sort_values(['team', 'season', 'week'], inplace=True)
-
-    # Use backward fill to propagate values from the next available week
-    df[target_column] = df.groupby(['team', 'season'])[target_column].bfill()
-
-    # Use forward fill to propagate values from the previous available week
-    df[target_column] = df.groupby(['team', 'season'])[target_column].ffill()
-
-    # Reset the index if needed
-    df.reset_index(drop=True, inplace=True)
-
-    return df.drop_duplicates()
-
-
-def backfill_missing_metrics(metrics_df, all_weeks, label='metrics') -> pd.DataFrame:
     logger.info(f"back and forward fill {label} metrics by week ...")
 
     numeric_columns = set(metrics_df.select_dtypes(include='number').columns.tolist())
@@ -144,71 +181,22 @@ def backfill_missing_metrics(metrics_df, all_weeks, label='metrics') -> pd.DataF
     return df.drop_duplicates()
 
 
-def build_power_datasets(weekly_stats_df, summary_data, offense_features, defense_features) -> (
-        pd.DataFrame, pd.DataFrame):
-    logger.info("get percentage contribution of offensive and defensive features")
-    offense_indicators = summarize_indicators(
-        summary_data,
-        offense_features, .023)
+def prepare_power_data(original_stats_df: DataFrame) -> DataFrame:
+    """
+    Helper function to create a dataset that is ready for feature selection
+    e.g. for xgboost
 
-    defense_indicators = summarize_indicators(
-        summary_data,
-        defense_features, .023)
+        - add a categorical win or loss 'y' category to a stats dataframe
+        - drop columns that are not important for this feaure selection
+        - scale remaining columns
 
-    power_scores_df = weekly_stats_df.copy()
+    Parameters:
+        original_stats_df (pd.DataFrame): an offense or defense stats dataframe that we can use for feature selection
 
-    logger.info("calculate weighted average of offensive and defensive features")
-    calculate_power_score(power_scores_df, offense_indicators, 'offense_power')
-    calculate_power_score(power_scores_df, defense_indicators, 'defense_power')
+    Returns:
+         features_df (pd.DataFrame): the features  we'll use for feature selection
 
-    # power_scores_df = power_scores_df[['season', 'week', 'team', 'offense_power', 'defense_power']].drop_duplicates()
-    logger.info("build a skeleton data set of all teams, seasons, weeks")
-    all_weeks = build_all_game_weeks(power_scores_df)
-
-    # offense power scores
-    logger.info("use skeleton to backfill any missing weeks")
-    raw_offense_power_df = power_scores_df[['season', 'week', 'team', 'offense_power']].drop_duplicates()
-    offense_power_df = backfill_missing_weeks(raw_offense_power_df, all_weeks, target_column='offense_power')
-
-    raw_defense_power_df = power_scores_df[['season', 'week', 'team', 'defense_power']].drop_duplicates()
-    defense_power_df = backfill_missing_weeks(raw_defense_power_df, all_weeks, target_column='defense_power')
-
-    return offense_power_df, defense_power_df
-
-
-def build_combined_power_datasets(weekly_stats_df, summary_data, offense_features, defense_features) -> (
-        pd.DataFrame, pd.DataFrame):
-    logger.info("get percentage contribution of offensive and defensive features")
-    offense_indicators = summarize_indicators(
-        summary_data,
-        offense_features, .023)
-
-    defense_indicators = summarize_indicators(
-        summary_data,
-        defense_features, .023)
-
-    power_scores_df = weekly_stats_df.copy()
-
-    logger.info("calculate weighted average of offensive and defensive features")
-    calculate_power_score(power_scores_df, offense_indicators, 'offense_power')
-    calculate_power_score(power_scores_df, defense_indicators, 'defense_power')
-
-    # power_scores_df = power_scores_df[['season', 'week', 'team', 'offense_power', 'defense_power']].drop_duplicates()
-    logger.info("build a skeleton data set of all teams, seasons, weeks")
-    all_weeks = build_all_game_weeks(power_scores_df, 'team')
-
-    # offense power scores
-    logger.info("use skeleton to backfill any missing weeks")
-    raw_offense_power_df = power_scores_df[['season', 'week', 'team', 'offense_power']].drop_duplicates()
-    offense_power_df = backfill_missing_weeks(raw_offense_power_df, all_weeks, target_column='offense_power')
-
-    raw_defense_power_df = power_scores_df[['season', 'week', 'team', 'defense_power']].drop_duplicates()
-    defense_power_df = backfill_missing_weeks(raw_defense_power_df, all_weeks, target_column='defense_power')
-
-    return offense_power_df, defense_power_df
-
-
-def prepare_power_data(original_stats_df):
+    """
     logger.info("encode the target win/loss column")
     original_stats_df['target'] = np.where(original_stats_df['win'] == 'win', 1,
                                            np.where(original_stats_df['win'] == 'loss', 0, 2))
@@ -225,12 +213,3 @@ def prepare_power_data(original_stats_df):
     features_df = pd.DataFrame(features, columns=raw_features_df.columns)
 
     return features_df
-
-
-if __name__ == '__main__':
-    file_name = "nfl_weekly_offense"
-    data_directory = get_config('data_directory')
-
-    input_path = os.path.join(data_directory, f"{file_name}.parquet")
-    stats_df = pd.read_parquet(input_path)
-    print("Done")
