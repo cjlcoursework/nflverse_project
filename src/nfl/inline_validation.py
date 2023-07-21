@@ -15,6 +15,14 @@ tests = {
 
 
 def check_values(df: pd.DataFrame, game_id, testcase: dict, msg):
+    """
+    This function checks the sum of yards gained for a specific game_id
+    Parameters:
+        df (pd.DataFrame): The DataFrame to be filtered
+        game_id (str): The game_id to be filtered
+        testcase (dict): The expected value of the sum of yards gained
+        msg (str): The message to be logged if we have an error
+    """
     logger.info(f"{msg}...")
     # Filter the DataFrame based on the game_id and select the 'down' and 'yards_gained' columns
     filtered_df = df.loc[df['game_id'] == game_id, ['down', 'yards_gained']]
@@ -27,6 +35,9 @@ def check_values(df: pd.DataFrame, game_id, testcase: dict, msg):
 
 
 def perform_inline_play_action_tests(play_action_df: pd.DataFrame, msg=None):
+    """
+    This function performs inline tests on the play_action DataFrame
+    """
     if msg is None:
         msg = "checking play_action counts"
     for game_id, testcase in tests.items():

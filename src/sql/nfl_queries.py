@@ -18,6 +18,11 @@ db = DatabaseLoader(get_config('connection_string'))
 
 
 def build_all_weeks_template() -> DataFrame:
+    """
+    Build a 'control' dataset with all seasons and weeks
+    Returns:
+        DataFrame: A dataframe with all seasons and weeks
+    """
     logger.info("Build a 'control' dataset with all seasons and weeks...")
     return db.query_to_df(
         """
@@ -30,6 +35,14 @@ def build_all_weeks_template() -> DataFrame:
 
 
 def build_play_actions_dataset() -> DataFrame:
+    """
+    Build a dataset with play actions
+    Insert some additional columns to make it easier to work with
+    LEAD() is used to get the score from the next row down into the current record
+    Row_number() is used to assign a unique row_id so we can validate it only occurs once in the final dataset
+    Returns:
+
+    """
     logger.info("query and modify play actions data ...")
 
     play_actions_df = db.query_to_df("""
@@ -142,6 +155,13 @@ def build_play_actions_dataset() -> DataFrame:
 
 
 def build_game_info_dataset() -> DataFrame:
+    """
+    Query and modify game info data
+    UNPIVOT the home and away team data so that we have a row for each team in each game
+    Returns:
+        A dataframe with game info
+
+    """
     logger.info("query and modify game info data ...")
 
     game_df = db.query_to_df("""
@@ -194,6 +214,11 @@ def build_game_info_dataset() -> DataFrame:
 
 
 def build_ngs_air_stats() -> DataFrame:
+    """
+    Query and modify next gen passing data
+    Returns:
+        A dataframe with next gen passing data
+    """
     logger.info("query and modify next gen passing data ...")
 
     ngs_air_power = db.query_to_df("""
@@ -228,6 +253,11 @@ def build_ngs_air_stats() -> DataFrame:
 
 
 def build_ngs_ground_stats() -> DataFrame:
+    """
+    Query and modify next gen rushing data
+    Returns:
+        A dataframe with next gen rushing data
+    """
     logger.info("query and modify next gen rushing data ...")
 
     ngs_ground_power = db.query_to_df("""
@@ -256,6 +286,12 @@ def build_ngs_ground_stats() -> DataFrame:
 
 
 def build_pbp_events_dataset() -> DataFrame:
+    """
+    Query and modify play-by-play events data
+    pivot the events into columns
+    Returns:
+        A dataframe with play-by-play events data
+    """
     logger.info("query and modify play-by-play player events ...")
 
     return db.query_to_df("""
@@ -281,6 +317,11 @@ def build_pbp_events_dataset() -> DataFrame:
 
 
 def build_offense_player_stats() -> DataFrame:
+    """
+    Query and modify player stats data grouped by offense
+    Returns:
+        A dataframe with player stats data
+    """
     logger.info("query offense player_stats data ...")
     return db.query_to_df("""
         select
@@ -322,6 +363,12 @@ def build_offense_player_stats() -> DataFrame:
 
 
 def build_defense_player_stats() -> DataFrame:
+    """
+    Query and modify player stats data grouped by defense
+    Returns:
+        A dataframe with player stats data
+    """
+
     logger.info("query defense player_stats data ...")
     return db.query_to_df("""
     select

@@ -3,11 +3,18 @@ import pandas as pd
 import seaborn
 import xgboost as xgb
 from matplotlib import pyplot as plt
+from pandas import DataFrame
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, precision_score, recall_score, f1_score
 from typing import Set, Any
 
 
-def print_f1_scores(y_pred, y_test):
+def print_f1_scores(y_pred: Any, y_test: Any):
+    """
+    Print precision, recall, and F1 scores
+    Parameters:
+        y_pred: The predicted values
+        y_test: The test values
+    """
     # Calculate precision, recall, and F1 scores
     precision = precision_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
@@ -19,7 +26,12 @@ def print_f1_scores(y_pred, y_test):
     print("F1-score:", f1)
 
 
-def plot_accuracy(r):
+def plot_accuracy(r: Any):
+    """
+    Plot accuracy and validation accuracy over epochs
+    Parameters:
+        r: The history from a model fit
+    """
     # Evaluate the model
     plt.plot(r.history['accuracy'], label='accuracy')
     plt.plot(r.history['val_accuracy'], label='val-accuracy')
@@ -29,7 +41,13 @@ def plot_accuracy(r):
     plt.show()
 
 
-def plot_confusion_matrix(y_pred, y_test):
+def plot_confusion_matrix(y_pred: Any, y_test: Any):
+    """
+    Plot confusion matrix
+    Parameters:
+        y_pred: The predicted values
+
+    """
     cm = confusion_matrix(y_pred=y_pred, y_true=y_test)
     cm_display = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[False, True])
     cm_display.plot(cmap='Blues')
@@ -37,6 +55,11 @@ def plot_confusion_matrix(y_pred, y_test):
 
 
 def plot_loss(r):
+    """
+    Plot loss and validation loss over epochs
+    Parameters:
+        r: The history from a model fit
+    """
     plt.plot(r.history['loss'], label='loss')
     plt.plot(r.history['val_loss'], label='val-loss')
     plt.xlabel("epochs")
@@ -46,6 +69,13 @@ def plot_loss(r):
 
 
 def plot_correlations(scores: Any, features: Any, title: str):
+    """
+    Plot feature importance
+    Parameters:
+        scores: The scores
+        features: The features
+        title: The title
+    """
     # Plot feature importance
     plt.figure(figsize=(10, 10))
     plt.barh(range(len(scores)), scores, align='center')
@@ -56,7 +86,13 @@ def plot_correlations(scores: Any, features: Any, title: str):
     plt.show()
 
 
-def plot_heatmap(df, drop_columns):
+def plot_heatmap(df: DataFrame, drop_columns: Set):
+    """
+    Plot heatmap
+    Parameters:
+        df: The DataFrame
+        drop_columns: The columns to drop
+    """
     numeric_df = df.select_dtypes(include='number').drop(columns=drop_columns)
     correlation_matrix = numeric_df.corr()
     plt.figure(figsize=(15, 10))
@@ -76,9 +112,10 @@ def plot_heatmap(df, drop_columns):
     plt.show()
 
 
-
-def hist_charts(df):
-    # Calculate the number of rows and columns for the grid
+def hist_charts(df: DataFrame):
+    """
+    Plot histograms
+    """
     num_cols = 4
     num_rows = (len(df.columns) + num_cols - 1) // num_cols
 
@@ -96,6 +133,16 @@ def hist_charts(df):
 
 
 def calc_feature_importance(X: pd.DataFrame, y: pd.Series, top_n=30) -> (pd.DataFrame, Set):
+    """
+    Calculate feature importance scores
+    Parameters:
+        X: The features
+        y: The target
+        top_n: The number of features to return
+    Returns:
+        DataFrame: The feature importance scores
+        Set: The top features
+    """
     # Create an XGBoost model
     model = xgb.XGBRegressor()
 
@@ -119,6 +166,16 @@ def calc_feature_importance(X: pd.DataFrame, y: pd.Series, top_n=30) -> (pd.Data
 
 
 def correlate_to_target(df: pd.DataFrame, target_column: str, top_n: int) -> (pd.DataFrame, Set):
+    """
+    Calculate correlation coefficients to the target column
+    Parameters:
+        df: The DataFrame
+        target_column: The target column
+        top_n: The number of features to return
+    Returns:
+        DataFrame: The correlation coefficients
+        Set: The top features
+    """
     # Calculate correlation matrix
     correlation_matrix = df.corr()
 
@@ -139,5 +196,3 @@ def correlate_to_target(df: pd.DataFrame, target_column: str, top_n: int) -> (pd
     s = set(df['y'].values)
 
     return df, s
-
-#%%
