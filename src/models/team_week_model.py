@@ -6,10 +6,11 @@ from tensorflow.keras.layers import Dense
 
 
 def create_team_week_model(input_shape,
+                           regularization_rate=0.001,
                            activation_function="relu",
                            output_function="sigmoid"):
     # Set parameters
-    regularization_function = regularizers.l1(0.001)
+    regularization_function = regularizers.l1(regularization_rate)
 
     # Create a neural network model
     model = Sequential()
@@ -17,10 +18,10 @@ def create_team_week_model(input_shape,
         Dense(246, input_dim=input_shape, activation=activation_function, kernel_regularizer=regularization_function))
     model.add(Dense(164, activation=activation_function, kernel_regularizer=regularization_function))
     model.add(Dense(100, activation=activation_function, kernel_regularizer=regularization_function))
-    model.add(Dense(100, activation=activation_function))
+    model.add(Dense(100, activation=activation_function, kernel_regularizer=regularization_function))
+    model.add(Dense(64, activation=activation_function))
     model.add(Dense(32, activation=activation_function))
-    model.add(Dense(32, activation=activation_function))
-    model.add(Dense(2, activation=output_function))
+    model.add(Dense(1, activation=output_function))
 
     return model
 
@@ -30,6 +31,8 @@ def train_team_week_model(model, X, y,
                           batch_size=32,
                           verbose=0,
                           learning_rate=.001,
+                          validation_data=None,
+                          validation_split=0.15,
                           loss_function='binary_crossentropy'):
     optimizer = Adam(learning_rate=learning_rate)
     model.compile(
@@ -49,7 +52,8 @@ def train_team_week_model(model, X, y,
                        batch_size=batch_size,
                        verbose=verbose,
                        callbacks=callbacks,
-                       validation_split=0.1)
+                       validation_data=validation_data,
+                       validation_split=validation_split)
 
     return result
 

@@ -1,197 +1,62 @@
-# nflverse_sdk
 
-├── README.md
-├── __init__.py
-├── __pycache__
-│   └── __init__.cpython-39.pyc
-├── boneyard
-│   ├── advstats.py
-│   ├── clean_player_stats.py
-│   ├── gzip_encoder.py
-│   ├── keras_generator.py
-│   ├── nflverse_data_job.ipynb
-│   ├── nflverse_reader_util.py
-│   ├── pbp_dim_field_goal.py
-│   ├── pbp_dim_fumble.py
-│   ├── pbp_dim_kickoff.py
-│   ├── pbp_dim_pass.py
-│   ├── pbp_participation.ipynb
-│   ├── player_stats.ipynb
-│   ├── pytorch_generator.py
-│   ├── recon_players_stats.py
-│   ├── snappy_encoder.py
-│   └── test_nflverse_reader.py
-├── data
-│   ├── internal
-│   │   └── positions.csv
-│   └── nfl
-│       ├── nfl_ml_offense_stats.parquet
-│       ├── nfl_pbp_game_stats.parquet
-│       ├── nfl_pbp_play_calls.parquet
-│       ├── nfl_play_actions.parquet
-│       ├── nfl_weekly_defense.parquet
-│       ├── nfl_weekly_defense_ml.parquet
-│       ├── nfl_weekly_offense.parquet
-│       └── nfl_weekly_offense_ml.parquet
-├── doc
-│   ├── AWS ML Notes
-│   └── nflverse_schemas
-│       ├── clean_player_names.csv
-│       ├── dictionary_combine.csv
-│       ├── dictionary_contracts.csv
-│       ├── dictionary_depth_charts.csv
-│       ├── dictionary_draft_picks.csv
-│       ├── dictionary_espn_qbr.csv
-│       ├── dictionary_ff_playerids.csv
-│       ├── dictionary_ff_rankings.csv
-│       ├── dictionary_ffopps.csv
-│       ├── dictionary_injuries.csv
-│       ├── dictionary_nextgenstats.csv
-│       ├── dictionary_participation.csv
-│       ├── dictionary_pbp.csv
-│       ├── dictionary_pfr_passing.csv
-│       ├── dictionary_playerstats.csv
-│       ├── dictionary_rosters.csv
-│       ├── dictionary_schedules.csv
-│       ├── dictionary_snap_counts.csv
-│       ├── dictionary_trades.csv
-│       ├── logo.svg
-│       ├── readme.md
-│       ├── social_preview.png
-│       └── social_preview.svg
-├── images
-│   ├── database.png
-│   ├── nfl.png
-│   └── output_directory.png
-├── model
-│   └── nfl_features_model.keras
-├── notebooks
-│   ├── custom.css
-│   ├── nfl_00_nflverse_output.ipynb
-│   ├── nfl_01_db_dimensions.ipynb
-│   ├── nfl_02_nfl_weekly_stats.ipynb
-│   ├── nfl_03_nfl_defense_power_score.ipynb
-│   ├── nfl_03_nfl_offense_power_score.ipynb
-│   ├── nfl_04_amerge_play_powers.ipynb
-│   ├── nfl_05_pbp_team_games.ipynb
-│   └── saves
-│       ├── nfl_05_ml_features.ipynb
-│       ├── nfl_06_ml_playcall.ipynb
-│       ├── play_call.ipynb
-│       ├── sandbox.ipynb
-│       ├── save_nfl_02_nfl_defense_power_score.ipynb
-│       └── save_nfl_02_nfl_offense_power_score.ipynb
-├── output
-│   ├── advstats-season-def
-│   │   └── advstats-season-def.parquet
-│   ├── advstats-season-pass
-│   │   └── advstats-season-pass.parquet
-│   ├── advstats-season-rec
-│   │   └── advstats-season-rec.parquet
-│   ├── advstats-season-rush
-│   │   └── advstats-season-rush.parquet
-│   ├── injuries
-│   │   ├── injuries_2016.parquet
-│   │   ├── injuries_2017.parquet
-│   │   ├── injuries_2018.parquet
-│   │   ├── injuries_2019.parquet
-│   │   ├── injuries_2020.parquet
-│   │   ├── injuries_2021.parquet
-│   │   └── injuries_2022.parquet
-│   ├── nextgen-passing
-│   │   ├── nextgen-passing_2016.csv.gz
-│   │   ├── nextgen-passing_2017.csv.gz
-│   │   ├── nextgen-passing_2018.csv.gz
-│   │   ├── nextgen-passing_2019.csv.gz
-│   │   ├── nextgen-passing_2020.csv.gz
-│   │   ├── nextgen-passing_2021.csv.gz
-│   │   └── nextgen-passing_2022.csv.gz
-│   ├── nextgen-receiving
-│   │   ├── nextgen-receiving_2016.csv.gz
-│   │   ├── nextgen-receiving_2017.csv.gz
-│   │   ├── nextgen-receiving_2018.csv.gz
-│   │   ├── nextgen-receiving_2019.csv.gz
-│   │   ├── nextgen-receiving_2020.csv.gz
-│   │   ├── nextgen-receiving_2021.csv.gz
-│   │   └── nextgen-receiving_2022.csv.gz
-│   ├── nextgen-rushing
-│   │   ├── nextgen-rushing_2016.csv.gz
-│   │   ├── nextgen-rushing_2017.csv.gz
-│   │   ├── nextgen-rushing_2018.csv.gz
-│   │   ├── nextgen-rushing_2019.csv.gz
-│   │   ├── nextgen-rushing_2020.csv.gz
-│   │   ├── nextgen-rushing_2021.csv.gz
-│   │   └── nextgen-rushing_2022.csv.gz
-│   ├── pbp
-│   │   ├── pbp_2016.parquet
-│   │   ├── pbp_2017.parquet
-│   │   ├── pbp_2018.parquet
-│   │   ├── pbp_2019.parquet
-│   │   ├── pbp_2020.parquet
-│   │   ├── pbp_2021.parquet
-│   │   └── pbp_2022.parquet
-│   ├── pbp-participation
-│   │   ├── pbp-participation_2016.parquet
-│   │   ├── pbp-participation_2017.parquet
-│   │   ├── pbp-participation_2018.parquet
-│   │   ├── pbp-participation_2019.parquet
-│   │   ├── pbp-participation_2020.parquet
-│   │   ├── pbp-participation_2021.parquet
-│   │   └── pbp-participation_2022.parquet
-│   ├── player-stats
-│   │   └── player-stats.parquet
-│   └── players
-│       └── players.parquet
-├── requirements.txt
-├── sandbox.ipynb
-├── schemas
-│   ├── advstats_season.pkl
-│   ├── injuries.pkl
-│   ├── nextgen_passing.pkl
-│   ├── nextgen_receiving.pkl
-│   ├── nextgen_rushing.pkl
-│   ├── pbp.pkl
-│   ├── pbp_participation.pkl
-│   ├── player_stats.pkl
-│   └── players.pkl
-├── sql
-│   └── wip.sql
-└── src
-├── __init__.py
-├── __pycache__
-│   ├── __init__.cpython-39.pyc
-│   ├── build_power_scores.cpython-39.pyc
-│   ├── configs.cpython-39.pyc
-│   ├── database_loader.cpython-39-pytest-7.3.1.pyc
-│   ├── database_loader.cpython-39.pyc
-│   ├── db_utils.cpython-39.pyc
-│   ├── inline_validation.cpython-39.pyc
-│   ├── nflverse_loader_job.cpython-39.pyc
-│   ├── nflverse_reader_job.cpython-39.pyc
-│   ├── nflverse_transform_job.cpython-39.pyc
-│   ├── pbp_fact.cpython-39.pyc
-│   ├── pbp_participation.cpython-39.pyc
-│   ├── player_injuries.cpython-39.pyc
-│   ├── player_stats.cpython-39.pyc
-│   ├── util_keras.cpython-39.pyc
-│   ├── utils.cpython-39.pyc
-│   └── utils_eda.cpython-39.pyc
-├── build_power_scores.py
-├── configs.py
-├── database_loader.py
-├── db_utils.py
-├── inline_validation.py
-├── nflverse_loader_job.py
-├── nflverse_reader_job.py
-├── nflverse_transform_job.py
-├── pbp_fact.py
-├── pbp_participation.py
-├── player_injuries.py
-├── player_stats.py
-├── poc.py
-├── temp.py
-├── util
-├── util_keras.py
-├── util_torch.py
-├── utils.py
-└── utils_eda.py
+<div style="background-color: teal; padding: 10px;">
+    <h2 style="color: white;">NFL Machine Learning Proof of Concept</h2>
+</div>
+
+<br>
+<h1 style="color: purple;">Problem Statement</h1>
+<div style="border: 1px solid rgba(147, 112, 219, 0.4); margin: 1px 0;"></div>
+<br>
+
+### <font color=teal>Motivation</font>
+
+  - We want to decide whether to kick off a project that uses readily avialable NFL data to apply machine learning to predict NFL game outcomes
+
+### <font color=teal>Context</font>
+- The NFLVerse site has some good NFL play-by-play data. 
+- We'd like to understand the difficulty and feasibility of using this data as input to a machine learning projects.  
+- We'd like to understand whether we can improve on these models using machine learning.
+
+### <font color=teal>Criteria for Success</font>
+- Determine a rough level-of-effort to predict NFL game outcomes using machine learning.
+    Create a proof-of-concept to show how data can be formatted as input to a machine learning model.   
+    Show that the model can be trained and used to predict NFL game outcomes.
+
+### <font color=teal>Scope of solution</font>
+- We don't need to predict games accurately.  We just need to show that we can format the data and train a model to predict NFL game outcomes.
+
+
+### <font color=teal>Constraints</font>
+- Because we have 2 weeks to decide whether to green-light a project to predict NFL game outcomes, we will not try to perfect either the model or the data.  
+    We'll just see if we can get something working with simple classification and regression models.
+    We do not have access to the NFL API, which may provide better data.
+
+<br>
+<h1 style="color: purple;">Approach</h1>
+<div style="border: 1px solid rgba(147, 112, 219, 0.4); margin: 1px 0;"></div>
+<br>
+
+### <font color=teal>Dimension the data</font>
+- The nflverse data is delivered in wide column monolithic blocks. 
+
+- The cardinality of the data is different for many of the columns, which is great for keeping it simple, but leads to very sparse data.
+- For example, a column containing the "rushing player" does not make sense for a pass play, so this data wil be null for anything but a rushing play, and there's no simple way to impute that information 
+    when it is taken along with other columns with different cardinality such as game drive and downs.
+    The best way to do that is to separate the data into dimensions and facts, then join them together in different ways to see what works.
+
+
+### <font color=teal>Experiment one</font>
+- Our first experiment will be to see if we can predict the outcome of play-calling based on the down, distance, and field position.  
+- The data would be at the most granular level of a single play.  
+- We'll use a simple model such as logistic regression to see if we can predict the yards gained.
+- We'll also use an AutoML ensemble model to see if we can get better results.
+
+### <font color=teal>Experiment two</font>
+- We have only two weeks, so if the play-call model does not provide immediate joy (we have two weeks) we won't spend too much more time to tweak the model.  Then we'll shift to aggregate the data to the game level and see if we can predict wins and losses.
+- This is not as interesting, because we don't really believe that we'll be able to predict even as well as a statistical approach, but we will still be able to see whether a model can diminish loss and increase accuracy. 
+
+
+### <font color=teal>Deliverables</font>
+- A proof-of-concept that shows how to format the data as input to a machine learning model.
+- A proof-of-concept that shows how to train a model to predict NFL game outcomes.
+- A report that shows the level-of-effort to predict NFL game outcomes using machine learning.
