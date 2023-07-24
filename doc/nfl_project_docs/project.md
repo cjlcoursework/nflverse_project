@@ -14,25 +14,23 @@
 
 ### <font color=teal>Motivation</font>
 
-  - We want to decide whether to kick off a project that uses readily avialable NFL data to apply machine learning to predict NFL game outcomes
+  - We want to decide whether to kick off a project that uses readily available NFL data to apply machine learning to predict NFL game outcomes
 
 ### <font color=teal>Context</font>
 - The NFLVerse site has some good NFL play-by-play data. 
 - We'd like to understand the difficulty and feasibility of using this data as input to a machine learning projects.  
-- We'd like to understand whether we can improve on these models using machine learning.
 
 ### <font color=teal>Criteria for Success</font>
-- Determine a rough level-of-effort to predict NFL game outcomes using machine learning.
-    Create a proof-of-concept to show how data can be formatted as input to a machine learning model.   
-    Show that the model can be trained and used to predict NFL game outcomes.
+- [ ] Provide a rough level-of-effort to predict NFL game outcomes using machine learning. 
+- [ ] Create a proof-of-concept to show how data can be formatted as input to a machine learning model.   
+- [ ] Show that the model can learn to predict NFL game outcomes better than a guess.
 
 ### <font color=teal>Scope of solution</font>
-- We don't need to predict games accurately.  We just need to show that we can format the data and train a model to predict NFL game outcomes.
-
+- We don't need to predict games accurately.  We just need to show that we can train a model with data that we curated to predict NFL game outcomes better than a guess.
 
 ### <font color=teal>Constraints</font>
 - Because we have 2 weeks to decide whether to green-light a project to predict NFL game outcomes, we will not try to perfect either the model or the data.  
-    We'll just see if we can get something working with simple classification and regression models.
+    We'll just see if we can get something working with a single input supervised model.
     We do not have access to the NFL API, which may provide better data.
 
 <br>
@@ -41,8 +39,9 @@
 <br>
 
 ### <font color=teal>Dimension the data</font>
-- The nflverse data is delivered in wide column monolithic blocks. 
+- Use the nflverse site data.  It's free and has a lot of data.
 
+- The nflverse data is delivered in swide column monolithic blocks.
 - The cardinality of the data is different for many of the columns, which is great for keeping it simple, but leads to very sparse data.
 - For example, a column containing the "rushing player" does not make sense for a pass play, so this data wil be null for anything but a rushing play, and there's no simple way to impute that information 
     when it is taken along with other columns with different cardinality such as game drive and downs.
