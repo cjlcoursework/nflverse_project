@@ -383,7 +383,6 @@ def build_defense_player_stats() -> DataFrame:
         sum(sack_fumbles_lost) as sack_fumbles_lost,
         sum(rushing_fumbles) as rushing_fumbles,
         sum(rushing_fumbles_lost) as rushing_fumbles_lost,
-        sum(rushing_first_downs) as rushing_first_downs,
         sum(receiving_fumbles) as receiving_fumbles,
         sum(receiving_fumbles_lost) as receiving_fumbles_lost
     from controls.player_stats

@@ -13,7 +13,7 @@ logger = configs.configure_logging("pbp_logger")
 logger.setLevel(logging.INFO)
 
 db = DatabaseLoader(get_config('connection_string'))
-COMMIT_TO_DATABASE = True
+COMMIT_TO_DATABASE = False
 SCHEMA = 'controls'
 
 

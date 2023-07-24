@@ -7,6 +7,7 @@ from src.nfl.nfl_power_scores import prepare_power_data, concat_power_score
 from src.util.utils_eda import calc_feature_importance, correlate_to_target, plot_correlations, plot_heatmap
 
 logger = configure_logging("pbp_logger")
+logger.setLevel(logging.INFO)
 
 
 class SelectNFLFeatures:

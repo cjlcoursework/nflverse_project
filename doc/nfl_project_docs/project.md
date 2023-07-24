@@ -1,12 +1,16 @@
 
 <div style="background-color: teal; padding: 10px;">
-    <h2 style="color: white;">NFL Machine Learning Proof of Concept</h2>
+    <h3 style="color: white;">Project Description</h3>
 </div>
 
+< [Back](main.md)
+
 <br>
-<h1 style="color: purple;">Problem Statement</h1>
+<h3 style="color: purple;">Problem Statement</h3>
 <div style="border: 1px solid rgba(147, 112, 219, 0.4); margin: 1px 0;"></div>
 <br>
+
+
 
 ### <font color=teal>Motivation</font>
 
