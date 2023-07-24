@@ -4,13 +4,35 @@
     <h3 style="color: white;">NFL Machine Learning Proof of Concept</h3>
 </div>
 
-# Table of Contents
+# Project documentation
 
 - [Project](project.md)
 - [Setup](setup.md)
 - [Workflow](workflow.md)
 - [Summary](summary.md)
 
+
+# Table of contents
+- [Introduction](#introduction)
+- [The nflverse data](#the-nflverse-data)
+- [ETL](#etl)
+- [Reading](#reading)
+- [Database creation](#database-creation)
+  - [play by play](#play-by-play)
+    - [play_actions](#play_actions)
+    - [player_events](#player_events)
+    - [player_participation](#player_participation)
+  - [Feature selection](#feature-selection)
+    - [create weekly offense and defense stats](#create-weekly-offense-and-defense-stats)
+    - [use sklearn and xgboost to perform feature selection](#use-sklearn-and-xgboost-to-perform-feature-selection)
+    - [merge the new offense and defense features with the core play-by-play data](#merge-the-new-offense-and-defense-features-with-the-core-play-by-play-data)
+    - [aggregate the weekly stats to the game level](#aggregate-the-weekly-stats-to-the-game-level)
+    - [load and merge the play_action with the offense and defense datasets](#load-and-merge-the-play_action-with-the-offense-and-defense-datasets)
+    - [aggregate the weekly stats to the game level](#aggregate-the-weekly-stats-to-the-game-level-1)
+- 
+
+
+# Introduction
 In this write-up I'm going to share my journey to use machine learning to analyse NFL games.   I know that's a bit vague, but I'll explain. This project is more about exploration than anything else. I am fascinated with AI and machine learning, and although I'm not interested in betting on games, I am interested in the application of machine learning to real-life challenges - such as NFL sports - which is another guilty pleasure for me personally.  
 
 I'm going to cover the following:
@@ -52,34 +74,43 @@ The data tht I decided to use for this initial projects was:
 
 
 
-# ETL
+# ETL workflows
 
-- configuration
-- alerts
-- logging
-- streaming
+## Stubs and shortcuts
+- configuration - I'm just using one very rudimentary configuration python configuration file: [config.py](../../src/config.py)
+- alerts - incidents are all sent to subroutines that don't do anythin but log to the console
+- logging - I'm just using the python logging library to log to the console
+- streaming - I'm not using any streaming or messaging services
 
-Job focus - the idea is that downloading the files is something that should happen autonomously as an ETL job.  
+## ETL jobs
+Job focus - the idea is that downloading, imputing, and validating the nflverse files is something that should happen autonomously as an ETL job as opposed to a Jupyter notebook.  The Jupyter notebooks are meant to be a demo of the ETL job, but the ETL job is meant to run autonomously.  The ETL job is orchestrated by the nfl_main.py script, which is also meant to run autonomously, but for demo purposes we can manually run the ETL and feature selection jobs from the notebooks.
 
-<img src="../../images/nfl.png" width="900" height="500" />
+## The workflow
+There are five overall steps to the ETL job:
+-[x] download the data: `read_nflverse_datasets()` - this is the main job that downloads the data from nflverse
+- [x] create the database: `create_nfl_database()` - this job creates the database and tables
+- [x] prepare the weekly stats `prepare_team_week_dataset()` - this job merges the data into a single dataset
+- [x] perform feature selection `perform_team_week_feature_selection()` - this job performs feature selection on the data
+- [x] merge the features `merge_team_week_features()` - this job merges the features with the core play-by-play data
 
-There are two steps to the ETL job:
+<img src="../../images/nfl.png" width="1000" height="400" />
 
+These steps slot into two major jobs:
+
+The first is getting the data from nflverse into local 'data-at-rest'.  This is a two step process:
 1. download the data: `read_nflverse_datasets()` - this is the main job that downloads the data from nflverse
 2. create the database: `create_nfl_database()` - this job creates the database and tables
 
-Next, we can prepare the data for experiment 2.  For that we need to aggregate the data to the game level.  We'll do this in a few steps:
+Once we have the data in an NFL database, we can query and prepare the data for experiments as outlined in the code block below.  We do this in three steps:
+1. prepare the weekly stats `prepare_team_week_dataset()` - this job merges the data into a single dataset
+2. perform feature selection `perform_team_week_feature_selection()` - this job performs feature selection on the data
+3. merge the features `merge_team_week_features()` - this job merges the features with the core play-by-play data
 
-3. prepare the weekly stats `prepare_team_week_dataset()` - this job merges the data into a single dataset
-4. perform feature selection `perform_team_week_feature_selection()` - this job performs feature selection on the data
-5. merge the features `merge_team_week_features()` - this job merges the features with the core play-by-play data
+Although these run autonomously, for demo purposes we can also manually run them from:
+- notebook [nfl_load_nflverse_data_demo.ipynb](notebooks/nfl_load_nflverse_data_demo.ipynb) runs each step manually end-to-end.
+- notebook [nfl_perform_feature_selection_demo.ipynb](notebooks/nfl_load_nflverse_feature_selection_demo.ipynb) re-runs just the feature selection model for additional demo and charts.
 
-The jobs are meant to run autonomously, but for demo purposes we can manually run the ETL and feature selection jobs from:
-- notebook [ETL demo notebook](notebooks/nfl_load_nflverse_data_demo.ipynb) runs each step manually end-to-end.
-- notebook [Feature selection notebook](notebooks/nfl_load_nflverse_feature_selection_demo.ipynb) re-runs just the feature selection model for additional demo and charts.
-
-The entire job is orchestrated by the nfl_main.py script, which is also meant to run autonomously, but for demo purposes we can manually run the ETL and feature selection jobs from the notebooks/nfl_load_nflverse_data_demo.ipynb notebook.
-
+The autonomous job is orchestrated in the nfl_main.py script:
 ```python
 
 def ingest_nflverse_data():
@@ -107,15 +138,14 @@ if __name__ == '__main__':
     prepare_team_week_data()
 ```
 
-# Reading 
+## Reading the nflverse data 
 
-[nfl_00_load_nflverse_data](https://github.com/cjlcoursework/nflverse_project/blob/c6ebaa24db6d7f3b7a3f5a755822307b2be3b23e/src/nfl_00_load_nflverse_data.py)
+Notebook: [nfl_00_load_nflverse_data](https://github.com/cjlcoursework/nflverse_project/blob/c6ebaa24db6d7f3b7a3f5a755822307b2be3b23e/src/nfl_00_load_nflverse_data.py)
 
 There's nothing fancy here.  The goal is to get the data from nflverse to my location wihtout any processing or risk that something goes wrong.  If something does go wrong at this stage the only thing we need to troubleshoot is the download itself - not any parsing or transformations.  I played with asynchronous downloads, but given the data size it was not worth the added complexity.  The data is not that big and the download is not that slow.  I just used the requests library to download the data.  I did incorporate a Thread pool executor  - but honestly I think that was more for fun than practicality.
 
 
-# Database creation
-
+## Database creation
 - the nflverse tables are monthithic for good reason I think - it would be difficult to manage a lot of little normalized datasets
 - the data is wide and sparse
 - the data is not normalized
@@ -123,11 +153,14 @@ There's nothing fancy here.  The goal is to get the data from nflverse to my loc
 
 The goal is not necessarily to normalize everything.  Instead, we'll separate data into separate dimensions that we can enrich as needed.
 
-The one exception is that we restructure the pbp table more extensively.  The table is a wealth of information that contains every play for every week in every season.  It's delivered as a wide sparse table with information at different cardinality.  
+The one exception is that we restructure the pbp table more extensively.  The table is a wealth of information that contains every play for every week in every season.  It's delivered as a wide sparse table with information at different cardinality.
 
 for example every single play has redundant information about the season, week, game, etc.  This is fine for many cases and I won't try to over-normalize that.  In other cases there's alot of sprse data:  for example there can be a column like field_goal_result - that will be null for everyplay that was not a field_goal_attempt.   The goal is not necessarily to normalize everything.  Instead, we'll separate data into separate dimensions that we can enrich as needed.
 
-Here is the way I dimensioned the nflverse data
+### Database design
+  The schema is documented here:  [Database schema](nfl_database_schema.sql)
+
+Overall, here is the way I dimensioned the nflverse data
 
 <table>
   <tr>
@@ -188,78 +221,91 @@ Here is the way I dimensioned the nflverse data
   </tr>
 </table>
 
+### Significant conversions
 
-## play by play
+### <font color=teal>Play by play (pbp)</font>
 The pbp table is a wealth of information that contains every play for every week in every season.  It's delivered as a wide sparse table with information at different cardinality.
 
 for example every single play has redundant information about the season, week, game, etc.  This is fine for many cases and I won't try to over-normalize that.  
 
 In other cases there's alot of sparse data: for example: a column like field_goal_result - that will be null for everyplay that was not a field_goal_attempt.   Instead, we'll separate data into separate dimensions that we can enrich as needed.
 
-### play_actions
+### <font color=teal>Play actions</font>
+The play_actions table is a subset of the pbp table.  It contains the play-level facts for a given game, such as drive, down, yards to go and perform minor enrichment like adding yards_to_goal by parsing yard line data.  The play_actions table is the core table for the play-by-play data.  It is the table that we will use for feature selection and experimentation.
 
 
 
-### player_events
-within a single row there are several player events. For example:
+### <font color=teal>Player events</font>
+within a single play-by-play row there are several player events. A few example columns are:
 
-- **qb_hit_player_id** 00001 might have sacked the QB
-- **fumble_player_id 00002** fumbled the ball
+| play\_id | qb\_hit\_1\_player\_id | sack\_player\_id | fumble\_recovery\_1\_player\_id |
+| :--- | :--- | :--- | :--- |
+| 3141 | 00-0029585 | 00-0032127 | 00-0029604 |
 
-We pull all of these out, merging with players and participation data to create a record like
-{player_id:0002, event=fumble, team=KC, lineup=defense}
-ithin a single row there are several player events. For example:
+---
 
-- qb_hit_player_id 00001 might have sacked the QB
-- fumble_player_id 00002 fumbled the ball
+We pull all of these out, and pivot them into separate rows, and merging with players and participation data to create normalized records like:
 
-We pull all of these out, merging with players and participation data to create a record like
+|player_id|event|team|lineup|position|
+| :--- | :--- | :--- | :--- | :--- |
+|00-0029585|qb\_hit|ARI|defense|DE|
+|00-0032127|sack|ARI|defense|OLB|
+|00-0029604|fumble\_recovery|MIN|defense|QB|
 
-```python
-dict(player_id='0002', event='fumble', team='KC', lineup='defense')
-```
 
 <br>
+We can then join at the play level or aggregate to the game-level.
+
 For example:
+<blockquote>
+  For a single game between the Vikings and the Cardinals, we can aggregate these individual records at the team level. 
 
-For a single game between the Chiefs and the Cardinals, we can aggregate these individual records at the team level and see that there were 6 fumbles, 6 sacks, 6 qb hits, 75 tackles, 0 interceptions and 0 safeties. 
+  ---
+  We want two records for that single game, one from the point of view of the Vikings and one from the point of view of the Cardinals.  This is important because we want to be able to generalize those stats to other situations by team.  We can do that by joining the player_events table to the player_participation table.  The player_participation table contains the player_id, team and lineup for each player in the game.  We can join the two tables on player_id and game_id to get the following results: 
+</blockquote>
 
-Just as important, we want two records for that single game, one from the point of view of the Chiefs and one from the point of view of the Cardinals.  This is important because we want to be able to generalize those stats to other situations by team.  We can do that by joining the player_events table to the player_participation table.  The player_participation table contains the player_id, team and lineup for each player in the game.  We can join the two tables on player_id and game_id to get the following results: 
-
+SQL
 ```sql
 with players as (
-    select distinct game_id,  player_id, team from controls.player_participation
+  select distinct game_id,  player_id, team from controls.player_participation
 ),
-defensive_events as (
-    select pe.season, pe.week, pe.game_id, pp.team, pe.player_id, pe.event, pe.lineup from controls.player_events pe
-        left join players pp on (pp.player_id = pe.player_id and pp.game_id = pe.game_id)
-        order by play_id 
-)
+     defensive_events as (
+       select pe.season, pe.week, pe.game_id, pp.team, pe.player_id, pe.event, pe.lineup from controls.player_events pe
+                                                                                                left join players pp on (pp.player_id = pe.player_id and pp.game_id = pe.game_id)
+       order by play_id
+     )
 SELECT
-    season, week, team, game_id,
-    SUM(CASE WHEN event = 'fumble' THEN 1 else 0 END) AS fumble,
-    SUM(CASE WHEN event = 'safety' THEN 1 else 0 END) AS safety,
-    SUM(CASE WHEN event = 'tackle' THEN 1 else 0 END) AS tackle,
-    SUM(CASE WHEN event = 'qb_hit' THEN 1 else 0  END) AS qb_hit,
-    SUM(CASE WHEN event = 'interception' THEN 1 else 0 END) AS interception,
-    SUM(CASE WHEN event = 'sack' THEN 1 else 0 END) AS sack
-FROM defensive_events where game_id = '2022_01_KC_ARI'
+  season, week, team, game_id,
+  SUM(CASE WHEN event = 'fumble' THEN 1 else 0 END) AS fumble,
+  SUM(CASE WHEN event = 'safety' THEN 1 else 0 END) AS safety,
+  SUM(CASE WHEN event = 'tackle' THEN 1 else 0 END) AS tackle,
+  SUM(CASE WHEN event = 'qb_hit' THEN 1 else 0  END) AS qb_hit,
+  SUM(CASE WHEN event = 'interception' THEN 1 else 0 END) AS interception,
+  SUM(CASE WHEN event = 'sack' THEN 1 else 0 END) AS sack
+FROM defensive_events where game_id = '2021_02_MIN_ARI'
 group by season, week, team, game_id
 order by season desc, team, week;
 ```
-
+Results
 
 | season | week | team | game\_id | fumble | safety | tackle | qb\_hit | interception | sack |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 2022 | 1 | ARI | 2022\_01\_KC\_ARI | 6 | 0 | 75 | 6 | 0 | 0 |
-| 2022 | 1 | KC | 2022\_01\_KC\_ARI | 6 | 0 | 60 | 6 | 0 | 3 |
+| 2021 | 2 | ARI | 2021\_02\_MIN\_ARI | 3 | 0 | 63 | 4 | 0 | 1 |
+| 2021 | 2 | MIN | 2021\_02\_MIN\_ARI | 3 | 0 | 70 | 3 | 2 | 3 |
 
 
 
 
 
+### <font color=teal>Player_participation</font>
 
-### player_participation
+The player participation dataset contains all the player contribution to a given play.  I stores all of the defense players in one array, and the offense players in a second array.  Here's an example of the defense players for a single play:
+
+| season | game\_id | play | defense_players                       | 
+| :--- | :--- |:-----|:--------------------------------------|
+| 2022 | 2022\_01\_BUF\_LA | 1 |   00-0031787, 00-0035352, 00-0037318 |
+
+We can explode the array into separate rows to create our version of the player_participation table.  We can then join this table to the other tables on player_id.  For example, we can get the player information for the defense players in the above example: 
 
 ```sql
 select R.season, R.game_id, R.team, R.player_id, R.lineup,  P.display_name
@@ -270,11 +316,11 @@ from controls.player_participation R
 limit 3
 ```
 
-| season | game\_id | team | player\_id | lineup | display\_name |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| 2022 | 2022\_01\_BUF\_LA | BUF | 00-0031787 | defense | Jake Kumerow |
-| 2022 | 2022\_01\_BUF\_LA | BUF | 00-0035352 | defense | Tyrel Dodson |
-| 2022 | 2022\_01\_BUF\_LA | BUF | 00-0037318 | defense | Baylon Spector |
+| season | game\_id | play | team | player\_id | lineup | display\_name |
+| :--- | :--- |:-----|:-----| :--- | :--- | :--- |
+| 2022 | 2022\_01\_BUF\_LA | 1    | BUF  | 00-0031787 | defense | Jake Kumerow |
+| 2022 | 2022\_01\_BUF\_LA | 1    | BUF  | 00-0035352 | defense | Tyrel Dodson |
+| 2022 | 2022\_01\_BUF\_LA | 1    | BUF  | 00-0037318 | defense | Baylon Spector |
 
 
 
