@@ -5,17 +5,24 @@
 
 <br>
 
-<font color=#0a4157>This is the home of my NFL machine learning capstone project, the goal of which is to use nflverse game-play data as input to a machine-learning model
-
-The documentation is located [Here](https://github.com/cjlcoursework/nflverse_project/wiki)
-
+<font color=#0a4157>
+This is the home the NFL machine learning project, the goal of which is to use nflverse game-play data as input to a machine-learning model
 </font>
 
----
+<br>
 
-The folder structure is as follows:
+<br>
+
+The documentation for this project is located: [Here](https://github.com/cjlcoursework/nflverse_project/wiki)
+
+<br>
+
+<br>
+
+<font color=#0a4157>The folder structure is as follows:</font>
+
 
 <img src="https://github.com/cjlcoursework/nflverse_project/blob/14786c6c93beb48f63fd321036c0f2882376921b/images/project_files.png" width="100%"/>
 
 
-WTF!!!!
+
