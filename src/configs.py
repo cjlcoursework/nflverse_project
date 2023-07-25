@@ -18,6 +18,7 @@ configurations = {
     'features_model': 'features_model',
 
     'game_stats': 'weekly_game_stats',
+    'database_schema': 'controls',
 
     'pbp_url': 'https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_{year}.{file_type}',
     'pbp_participation_url': 'https://github.com/nflverse/nflverse-data/releases/download/pbp_participation/pbp_participation_{year}.{file_type}',
