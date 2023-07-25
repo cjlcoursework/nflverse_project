@@ -24,7 +24,8 @@ def drop_extras(df: pd.DataFrame):
         df.drop(columns=drops, inplace=True)
 
 
-def merge_powers(action_df: DataFrame, powers_df: DataFrame, suffixes:Tuple[str,str], left_on: List[str], renames: Dict =None, msg: str ='play_counter') -> DataFrame:
+def merge_powers(action_df: DataFrame, powers_df: DataFrame, suffixes: Tuple[str, str], left_on: List[str],
+                 renames: Dict = None, msg: str = 'play_counter') -> DataFrame:
     """
     Merge the offensive stats with the play-by-play events and game info.
     Parameters:
@@ -40,7 +41,8 @@ def merge_powers(action_df: DataFrame, powers_df: DataFrame, suffixes:Tuple[str,
 
     """
     expected_shape = action_df.shape
-    _df = pd.merge(action_df, powers_df, left_on=left_on, suffixes=suffixes, right_on=['season', 'week', 'team']).drop_duplicates()
+    _df = pd.merge(action_df, powers_df, left_on=left_on, suffixes=suffixes,
+                   right_on=['season', 'week', 'team']).drop_duplicates()
     drop_extras(_df)
     _df.rename(columns=renames, inplace=True)
 
@@ -94,18 +96,21 @@ def load_and_merge_weekly_features():
     logger.info("merge stats into play_actions...")
 
     df = merge_powers(pbp_actions_df, offense_powers_df, left_on=['season', 'week', 'home_team'],
-                      renames={'offense_power': 'offense_op'}, suffixes=('_pbp', '_hop'),  msg="merging offense_OP")
+                      renames={'offense_power': 'offense_op'}, suffixes=('_pbp', '_hop'), msg="merging offense_OP")
 
-    df = merge_powers(df, defense_powers_df, left_on=['season', 'week', 'home_team'], suffixes=('_xx', '_hdp'),  renames={'defense_power': 'offense_dp'},
+    df = merge_powers(df, defense_powers_df, left_on=['season', 'week', 'home_team'], suffixes=('_xx', '_hdp'),
+                      renames={'defense_power': 'offense_dp'},
                       msg="merging offense_DP")
 
-    df = merge_powers(df, offense_powers_df, left_on=['season', 'week', 'away_team'], suffixes=('_hop', '_aop'),  renames={'offense_power': 'defense_op'},
+    df = merge_powers(df, offense_powers_df, left_on=['season', 'week', 'away_team'], suffixes=('_hop', '_aop'),
+                      renames={'offense_power': 'defense_op'},
                       msg="merging defense_OP")
 
-    df = merge_powers(df, defense_powers_df, left_on=['season', 'week', 'defteam'], suffixes=('_hdp', '_adp'),  renames={'defense_power': 'defense_dp'},
+    df = merge_powers(df, defense_powers_df, left_on=['season', 'week', 'defteam'], suffixes=('_hdp', '_adp'),
+                      renames={'defense_power': 'defense_dp'},
                       msg="merging defense_DP")
 
-    assert_and_alert(pbp_actions_df.shape[0]==df.shape[0],
+    assert_and_alert(pbp_actions_df.shape[0] == df.shape[0],
                      msg=f"merged row count should equal original: "
                          f"original {pbp_actions_df.shape}, "
                          f"after merge {df.shape} ")
@@ -133,61 +138,36 @@ def aggregate_game_stats(df: DataFrame):
     #   also by defense and offense so separate row are created for each team
     grouped_df = df.groupby(['season', 'week', 'game_id', 'home_team', 'away_team']).agg(
         drive_count=('drive', 'count'),
-
         carries_hop=('carries_hop', 'sum'),
         carries_aop=('carries_aop', 'sum'),
-
         receiving_tds_hop=('receiving_tds_hop', 'sum'),
         receiving_tds_aop=('receiving_tds_aop', 'sum'),
-
         passer_rating_hop=('passer_rating_hop', 'mean'),
         passer_rating_aop=('passer_rating_aop', 'mean'),
-
         pass_touchdowns_hop=('pass_touchdowns_hop', 'mean'),
         pass_touchdowns_aop=('pass_touchdowns_aop', 'mean'),
-
         special_teams_tds_hop=('special_teams_tds_hop', 'sum'),
         special_teams_tds_aop=('special_teams_tds_aop', 'sum'),
-
         rushing_yards_hop=('rushing_yards_hop', 'sum'),
         rushing_yards_aop=('rushing_yards_aop', 'sum'),
-
         rushing_tds_hop=('rushing_tds_hop', 'sum'),
         rushing_tds_aop=('rushing_tds_aop', 'sum'),
-
         receiving_yards_hop=('receiving_yards_hop', 'sum'),
         receiving_yards_aop=('receiving_yards_aop', 'sum'),
-
         receiving_air_yards_hop=('receiving_air_yards_hop', 'sum'),
         receiving_air_yards_aop=('receiving_air_yards_aop', 'sum'),
-
-
         ps_interceptions_hdp=('ps_interceptions_hdp', 'sum'),
         ps_interceptions_adp=('ps_interceptions_adp', 'sum'),
-
-
-
         interception_hdp=('interception_hdp', 'sum'),
         interception_adp=('interception_adp', 'sum'),
-
-
-
         qb_hit_hdp=('qb_hit_hdp', 'sum'),
         qb_hit_adp=('qb_hit_adp', 'sum'),
-
-
         sack_hdp=('sack_hdp', 'sum'),
         sack_adp=('sack_adp', 'sum'),
-
         tackle_hdp=('tackle_hdp', 'sum'),
         tackle_adp=('tackle_adp', 'sum'),
-
-
-
         sack_yards_hdp=('sack_yards_hdp', 'sum'),
         sack_yards_adp=('sack_yards_adp', 'sum'),
-
-
         first_downs=('down', lambda x: (x == 1).sum()),
         home_final_score=('home_final_score', 'max'),
         away_final_score=('away_final_score', 'max'),
@@ -216,7 +196,7 @@ def aggregate_game_stats(df: DataFrame):
 
     # Create a new column 'loss_tie_win' based on conditions
     games_df['loss_tie_win'] = np.where(
-        games_df['home_final_score'] >= games_df['away_final_score'], 1, 0 )
+        games_df['home_final_score'] >= games_df['away_final_score'], 1, 0)
 
     return games_df
 

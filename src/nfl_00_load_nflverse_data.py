@@ -2,6 +2,8 @@ from typing import Dict
 
 import logging
 import os.path
+from tqdm import tqdm
+import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
 import requests
@@ -39,7 +41,6 @@ def read_source(url, output_dir, local_file_base, schema_file_path=None, silent=
     """
     Download the file from the url and save it locally under `file_name`
     """
-
     base_file_name = os.path.basename(url)
 
     local_file_base_name = local_file_base + base_file_name[base_file_name.index('.'):]
@@ -60,8 +61,6 @@ def read_source(url, output_dir, local_file_base, schema_file_path=None, silent=
         # Write to the local_file_path
         with open(full_path, "wb") as file:
             file.write(response.content)
-            logger.debug(f"Downloaded: {base_file_name}")
-            print(".", end="")
 
         # validate against the schema if one was sent in
         if schema_file_path is not None:
@@ -139,30 +138,30 @@ class URLReader:
         """
         get all urls from get_urls() and create an executor thread pool
         to download them to a pre-configured location on disk
-         """
+        """
         urls = self.get_urls()
         test_only = False
 
         if not os.path.exists(self.output_directory):
             os.makedirs(self.output_directory)
 
+        def download_helper(url_file_tuple):
+            file_name, url = url_file_tuple
+            read_source(url, self.output_directory, file_name)
+
         # Submit download tasks to the executor
         if test_only:
-            [read_source(url, self.output_directory, file_name) for file_name, url in urls.items()]
+            [read_source(url, self.output_directory, file_name) for file_name, url in tqdm(urls.items(), desc='Downloading')]
         else:
-            executor = ThreadPoolExecutor(max_workers=self.max_workers)
-            tasks = [
-                executor.submit(read_source, url, self.output_directory, file_name )
-                for file_name, url in urls.items()
-            ]
+            with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                tasks = [executor.submit(download_helper, (file_name, url)) for file_name, url in urls.items()]
 
-            # Wait for all tasks to complete
-            for future in as_completed(tasks):
-                try:
-                    result = future.result()
-                    # print(f'Successfully downloaded: {result}')
-                except Exception as e:
-                    logger.info(f'Error occurred: {str(e)}')
+                # Wait for all tasks to complete
+                for future in tqdm(concurrent.futures.as_completed(tasks), total=len(tasks), desc='Downloading', unit='file', leave=True):
+                    try:
+                        result = future.result()
+                    except Exception as e:
+                        logger.info(f'Error occurred: {str(e)}')
 
         return urls
 
@@ -176,9 +175,7 @@ def read_nflverse_datasets():
     logger.setLevel(logging.DEBUG)
     reader = URLReader(start_year=get_config("start_year"), last_year=get_config("last_year"), file_type=get_config("file_type"))
 
-    logger.info("begin downloads ...")
     urls = reader.download()
-    logger.info("downloads complete ...")
 
 
 if __name__ == '__main__':

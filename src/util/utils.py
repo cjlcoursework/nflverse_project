@@ -145,32 +145,6 @@ def get_duplicates_by_key(df, key_name):
     return duplicate_keys
 
 
-def label_encode(labels_df: pd.DataFrame, columns: List[str]):
-    """
-    Label encode a DataFrame
-    Parameters:
-        labels_df: A DataFrame or slice of a DataFrame
-        columns: The columns to label encode
-    Returns:
-        DataFrame: The label encoded DataFrame
-    """
-    print("Shape before labels:", labels_df.shape)
-
-    labels = {}
-
-    for col in columns:
-        if labels_df[col].dtype == 'object':
-            print("encode ", col)
-            encoder = LabelEncoder()
-            labels_df[col] = encoder.fit_transform(labels_df[col])
-            original_labels = encoder.inverse_transform(labels_df[col])
-            zippy = zip(labels_df[col].values, original_labels)
-            labels[col] = set(list(zippy))
-
-    print("Shape after labels:", labels_df.shape)
-    return labels_df, labels
-
-
 def load_files(data_subdir: str) -> Optional[DataFrame]:
     """
     Load all files from a directory
