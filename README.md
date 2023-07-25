@@ -18,3 +18,4 @@ The folder structure is as follows:
 <img src="https://github.com/cjlcoursework/nflverse_project/blob/14786c6c93beb48f63fd321036c0f2882376921b/images/project_files.png" width="100%"/>
 
 
+WTF!!!!
