@@ -16,6 +16,7 @@ configurations = {
     'offense_week_features': 'tmp_offense_week_features',
     'defense_week_features': 'tmp_defense_week_features',
     'features_model': 'features_model',
+    'experiment_2_model': 'team_week_model',
 
     'game_stats': 'weekly_game_stats',
     'database_schema': 'controls',
