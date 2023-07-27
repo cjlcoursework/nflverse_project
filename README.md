@@ -13,13 +13,12 @@ This is the home the NFL machine learning project, the goal of which is to use n
 
 <br>
 
-The documentation for this project is located: [Here](https://github.com/cjlcoursework/nflverse_project/wiki)
+The documentation for this project is located: [Project Wiki](https://github.com/cjlcoursework/nflverse_project/wiki)
 
 <br>
 
-<br>
 
-<font color=#0a4157>The folder structure is as follows:</font>
+<font color=#0a4157>The project folder structure is:</font>
 
 
 <img src="https://github.com/cjlcoursework/nflverse_project/blob/14786c6c93beb48f63fd321036c0f2882376921b/images/project_files.png" width="100%"/>

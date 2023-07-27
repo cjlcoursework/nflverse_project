@@ -100,6 +100,48 @@ tested_extensions = {
 }
 
 
+
+ml_win_lose_features = [
+    'carries_hop',
+    'carries_aop',
+    'receiving_tds_hop',
+    'receiving_tds_aop',
+    'passer_rating_hop',
+    'passer_rating_aop',
+    'pass_touchdowns_hop',
+    'pass_touchdowns_aop',
+    'special_teams_tds_hop',
+    'special_teams_tds_aop',
+    'rushing_yards_hop',
+    'rushing_yards_aop',
+    'rushing_tds_hop',
+    'rushing_tds_aop',
+    'receiving_yards_hop',
+    'receiving_yards_aop',
+    'receiving_air_yards_hop',
+    'receiving_air_yards_aop',
+    'ps_interceptions_hdp',
+    'ps_interceptions_adp',
+    'interception_hdp',
+    'interception_adp',
+    'qb_hit_hdp',
+    'qb_hit_adp',
+    'sack_hdp',
+    'sack_adp',
+    'tackle_hdp',
+    'tackle_adp',
+    'sack_yards_hdp',
+    'sack_yards_adp',
+    'home_team_offense_power',
+    'home_team_defense_power',
+    'away_team_offense_power',
+    'away_team_defense_power'
+
+]
+
+
+
+
 """
     'half_seconds_remaining',
     'qtr',
