@@ -387,7 +387,7 @@ class League:
 
 
 if __name__ == "__main__":
-    teams = ['LAC', 'KC', 'GB', 'ARZ', 'LA']
+    teams = ['LAC', 'KC', 'GB']
     league = League()
     for team in teams:
         league.add_crew(Team(

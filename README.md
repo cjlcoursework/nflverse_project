@@ -6,7 +6,9 @@
 <br>
 
 <font color=#0a4157>
-This is the home the NFL machine learning project, the goal of which is to use nflverse game-play data as input to a machine-learning model
+This is the home of my first data science/machine learning capstone for Springboard's online bootcamp. 
+
+The goal of this project is to use nflverse game-play data as input to a machine-learning model.
 </font>
 
 <br>

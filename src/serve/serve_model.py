@@ -62,13 +62,12 @@ class NFLWinLossDeployment:
 
     def __init__(self, season=2022, week=1):
         self.season = season
-        self.week = week
         self.db = DatabaseLoader(get_config('connection_string'))
-        self.model = self.load_win_loss_model()
-        self.scaler = self.get_scaler()
-        self.offense, self.defense = self.get_season(season, week)
+        self.model = self.load_model()
+        self.scaler = self.load_scaler()
+        self.offense, self.defense = self.load_season(season, week)
 
-    def load_win_loss_model(self):
+    def load_model(self):
         model_directory = get_config('model_directory')
         model_name = get_config('experiment_2_model')
         full_path = os.path.join(model_directory, f'{model_name}.h5')
@@ -76,14 +75,13 @@ class NFLWinLossDeployment:
         loaded_model.summary()
         return loaded_model
 
-    def get_scaler(self):
+    def load_scaler(self):
         model_directory = get_config('model_directory')
         model_name = get_config('experiment_2_model')
         full_path = os.path.join(model_directory, f'{model_name}_scaler.pkl')
         # Save the scaler to a file
         scaler = joblib.load(full_path)
         return scaler
-
 
     def predict(self, X_test: DataFrame):
         y_pred_probs = self.model.predict(X_test, verbose=0)
@@ -92,7 +90,7 @@ class NFLWinLossDeployment:
         threshold = 0.5
         y_pred_binary = (y_pred_probs >= threshold).astype(int)
 
-        return y_pred_binary
+        return y_pred_binary, y_pred_probs
 
     def validate_schema(self, df: DataFrame):
         expected_columns = set(configs.ml_win_lose_features)
@@ -128,7 +126,7 @@ class NFLWinLossDeployment:
                 'team': f'{suffix}_team'
             }
         )
-        return pd.merge(offense_stats, defensive_stats, on=['season', 'week', f'{suffix}_team'])
+        return pd.merge(offense_stats, defensive_stats, on=['season',  f'{suffix}_team'])
 
     def scale_numeric_columns(self, df):
         numeric_df = df.select_dtypes(include=np.number)
@@ -138,24 +136,62 @@ class NFLWinLossDeployment:
         df[scaled_columns] = scaled_df[scaled_columns]
         return df.copy()
 
+    def aggregate_offense_stats(self, df: DataFrame):
 
-    def get_season(self, season, week):
+        # we'll want to weight more recent weeks more heavily, but for now just get this working
+        grouped_df = df.groupby(['season', 'team']).agg(
+            carries=('carries', 'sum'),
+            receiving_tds=('receiving_tds', 'sum'),
+            passer_rating=('passer_rating', 'mean'),
+            pass_touchdowns=('pass_touchdowns', 'mean'),
+            special_teams_tds=('special_teams_tds', 'sum'),
+            rushing_yards=('rushing_yards', 'sum'),
+            rushing_tds=('rushing_tds', 'sum'),
+            receiving_yards=('receiving_yards', 'sum'),
+            receiving_air_yards=('receiving_air_yards', 'sum'),
+            offense_power=('offense_power', 'mean'),
+        )
+
+        # Reset the index to transform the grouped DataFrame back to a regular DataFrame
+        grouped_df.reset_index(inplace=True)
+        return grouped_df.copy()
+
+    def aggregate_defense_stats(self, df: DataFrame):
+
+        grouped_df = df.groupby(['season', 'team']).agg(
+            ps_interceptions=('ps_interceptions', 'sum'),
+            interception=('interception', 'sum'),
+            qb_hit=('qb_hit', 'sum'),
+            sack=('sack', 'sum'),
+            tackle=('tackle', 'sum'),
+            sack_yards=('sack_yards', 'sum'),
+            defense_power=('defense_power', 'mean')
+        )
+
+        # Reset the index to transform the grouped DataFrame back to a regular DataFrame
+        grouped_df.reset_index(inplace=True)
+        return grouped_df.copy()
+
+    def load_season(self, season, week):
         # get the base features
         offense = self.db.query_to_df(
-            f"""select {",".join(offense_columns)} from controls.offense_week_features where season = {season} and week <= {week}""")
+            f"""select {",".join(offense_columns)} from controls.offense_week_features where season = {season} and week = {week} """)
         defense = self.db.query_to_df(
-            f"""select {",".join(defense_columns)} from controls.defense_week_features where season = {season} and week <= {week}""")
+            f"""select {",".join(defense_columns)} from controls.defense_week_features where season = {season} and week = {week}""")
+
+        # roll up the features
+        offense = self.aggregate_offense_stats(offense)
+        defense = self.aggregate_defense_stats(defense)
 
         # scale the numeric columns
         offense = self.scale_numeric_columns(offense)
         defense = self.scale_numeric_columns(defense)
         return offense, defense
 
-
     def create_match(self, home_team: str, away_team: str) -> Optional[DataFrame]:
         home_stats = self.get_team_stats(team=home_team, suffix='home')
         away_stats = self.get_team_stats(team=away_team, suffix='away')
-        match_df = pd.merge(home_stats, away_stats, on=['season', 'week'])
+        match_df = pd.merge(home_stats, away_stats, on=['season'])
         ok, excess_columns = self.validate_schema(match_df)
         if ok:
             return match_df
@@ -170,10 +206,10 @@ def main():
 
 
 def test_pbp_actions(season: int):
-    model = NFLWinLossDeployment(season=2022, week=1)
+    model = NFLWinLossDeployment(season=2022, week=4)
 
     # Call the generator function with the 'season' parameter
-    generator = load_pbp_actions(season=2022, week=1)
+    generator = load_pbp_actions(season=2022, week=5)
 
     # Iterate through the generator and print each row
     stats = []
@@ -184,11 +220,11 @@ def test_pbp_actions(season: int):
         match_df = model.create_match(row['home_team'], row['away_team'])
 
         y_actual = row['win_lose']
-        y_pred = model.predict(match_df[configs.ml_win_lose_features])
+        y_pred, y_prob = model.predict(match_df[configs.ml_win_lose_features])
         stats.append(dict(home=row['home_team'], away=row['away_team'], y_actual=y_actual, y_pred=y_pred))
         if y_actual == y_pred:
             corrects += 1
-        print(f"match {row['home_team']} vs {row['away_team']} results: y_actual: {y_actual} y_pred: {y_pred}")
+        print(f"Request a prediction for {row['home_team']} vs {row['away_team']}\t\tresults: prediction: {y_pred}, actual: {y_actual}\t\t{'ok' if y_actual == y_pred else '--'} \t probability: {y_prob}")
         if total > 20:
             break
 
@@ -197,4 +233,4 @@ def test_pbp_actions(season: int):
 
 if __name__ == '__main__':
     test_pbp_actions(2022)
-    main()
+
