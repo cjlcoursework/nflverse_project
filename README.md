@@ -6,9 +6,9 @@
 <br>
 
 <font color=#0a4157>
-This is the home of my first data science/machine learning capstone for Springboard's online bootcamp. 
+This is the home of a Python, SQL Tensorflow NFL prediction model. 
 
-The goal of this project is to use nflverse game-play data as input to a machine-learning model.
+The goal of this project is to transform, blend and impute nflverse game-play data as input to a machine-learning model.
 </font>
 
 <br>
